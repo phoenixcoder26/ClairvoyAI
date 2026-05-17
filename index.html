@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClairvoyAI — Risk Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,sans-serif}
+.wrap{position:relative;overflow:hidden;border-radius:16px;min-height:900px;}
+#bgCanvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;}
+.content{position:relative;z-index:2;padding:20px;}
+.hdr{text-align:center;margin-bottom:24px;padding-top:10px;}
+.hdr-logo-wrap{position:relative;display:inline-block;margin-bottom:8px;}
+.hdr-logo{font-size:52px;font-weight:700;letter-spacing:-1.5px;line-height:1;
+  background:linear-gradient(135deg,#ffffff 0%,#a8d8ff 30%,#5bc8ff 55%,#a78bfa 80%,#7dd3fc 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 32px rgba(91,200,255,.55)) drop-shadow(0 0 8px rgba(167,139,250,.4));
+  position:relative;z-index:1;}
+.hdr-logo-ai{
+  background:linear-gradient(135deg,#5bc8ff 0%,#a78bfa 60%,#f0abfc 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hdr-logo-glow{position:absolute;inset:-12px;background:radial-gradient(ellipse at center,rgba(91,200,255,.18) 0%,rgba(167,139,250,.1) 50%,transparent 75%);filter:blur(8px);z-index:0;pointer-events:none;}
+.hdr-tagline-wrap{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:2px;margin-bottom:6px;}
+.hdr-line{flex:1;max-width:80px;height:1px;background:linear-gradient(90deg,transparent,rgba(91,200,255,.5));}
+.hdr-line.r{background:linear-gradient(90deg,rgba(91,200,255,.5),transparent);}
+.hdr-tag{font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:#5bc8ff;opacity:.85;}
+.hdr-sub{font-size:12px;color:#7bbfd8;margin-top:4px;letter-spacing:.04em;}
+.hdr-underline{width:120px;height:1.5px;margin:10px auto 0;background:linear-gradient(90deg,transparent,#5bc8ff 40%,#a78bfa 60%,transparent);border-radius:2px;}
+@keyframes hdr-shimmer{0%,100%{opacity:.7}50%{opacity:1}}
+.hdr-logo{animation:hdr-shimmer 4s ease-in-out infinite;}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.kpi{background:rgba(5,30,70,.55);border:1px solid rgba(91,200,255,.25);border-radius:12px;padding:13px 14px;backdrop-filter:blur(8px);}
+.kpi-l{font-size:11px;font-weight:500;color:#7bbfd8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;}
+.kpi-v{font-size:24px;font-weight:600;color:#f0f8ff;line-height:1;}
+.kpi-s{font-size:11px;color:#7bbfd8;margin-top:3px;}
+.row2{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px;}
+.panel{background:rgba(3,20,55,.6);border:1px solid rgba(91,200,255,.2);border-radius:14px;padding:16px;backdrop-filter:blur(10px);}
+.panel-title{font-size:13px;font-weight:600;color:#c8e8ff;margin-bottom:12px;letter-spacing:.03em;display:flex;align-items:center;gap:7px;}
+.panel-title i{font-size:15px;color:#5bc8ff;}
+.legend-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+.leg{display:flex;align-items:center;gap:5px;font-size:12px;color:#a8d4f0;}
+.leg-sq{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+#gaussCanvas{width:100%;display:block;border-radius:8px;}
+#cubeWrap{display:flex;justify-content:center;align-items:center;height:280px;}
+#cubeCanvas{border-radius:8px;cursor:grab;}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.mini-panel{background:rgba(3,20,55,.6);border:1px solid rgba(91,200,255,.18);border-radius:12px;padding:14px;backdrop-filter:blur(8px);}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.pulse{animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+/* animated canvas panels */
+#scorecardCanvas{width:100%;display:block;}
+#driversCanvas{width:100%;display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<canvas id="bgCanvas"></canvas>
+
+<div class="content">
+<div class="hdr">
+  <div class="hdr-logo-wrap">
+    <div class="hdr-logo-glow"></div>
+    <div class="hdr-logo">Clairvoy<span class="hdr-logo-ai">AI</span></div>
+  </div>
+  <div class="hdr-tagline-wrap">
+    <div class="hdr-line"></div>
+    <div class="hdr-tag">Risk Intelligence Platform</div>
+    <div class="hdr-line r"></div>
+  </div>
+  <div class="hdr-sub">Live animated risk analysis · 25 SEC 10-K filings · Item 1A · 2021–2025</div>
+  <div class="hdr-underline"></div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="kpi-l">Filings analyzed</div><div class="kpi-v">25</div><div class="kpi-s">5 companies · 5 years</div></div>
+  <div class="kpi"><div class="kpi-l">Portfolio avg score</div><div class="kpi-v" id="kAvg">52.3</div><div class="kpi-s">out of 100</div></div>
+  <div class="kpi"><div class="kpi-l">High-risk filings</div><div class="kpi-v" style="color:#ff6b6b;">5</div><div class="kpi-s">20% of portfolio</div></div>
+  <div class="kpi"><div class="kpi-l">Peak risk score</div><div class="kpi-v" style="color:#ff6b6b;">100.0</div><div class="kpi-s">Boeing 2021</div></div>
+</div>
+
+<div class="row2">
+  <div class="panel">
+    <div class="panel-title"><i class="ti ti-wave-square" aria-hidden="true"></i>Live risk score distribution — animated Gaussian peaks</div>
+    <div class="legend-row">
+      <div class="leg"><div class="leg-sq" style="background:#5bc8ff;"></div>Boeing</div>
+      <div class="leg"><div class="leg-sq" style="background:#a78bfa;"></div>Tesla</div>
+      <div class="leg"><div class="leg-sq" style="background:#34d399;"></div>Amazon</div>
+      <div class="leg"><div class="leg-sq" style="background:#fb7185;"></div>Pfizer</div>
+      <div class="leg"><div class="leg-sq" style="background:#fbbf24;"></div>Airbnb</div>
+    </div>
+    <div style="position:relative;width:100%;height:240px;">
+      <canvas id="gaussCanvas" role="img" aria-label="Animated Gaussian bell curve chart showing SEC filing risk score distributions"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><i class="ti ti-cube" aria-hidden="true"></i>3D risk matrix — drag to rotate</div>
+    <div id="cubeWrap">
+      <canvas id="cubeCanvas" width="280" height="280" role="img" aria-label="Interactive 3D risk matrix cube"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row3">
+  <div class="mini-panel">
+    <div style="font-size:12px;font-weight:600;color:#c8e8ff;margin-bottom:10px;">Company scorecard</div>
+    <canvas id="scorecardCanvas" height="200" aria-label="Animated company scorecard bars"></canvas>
+  </div>
+  <div class="mini-panel">
+    <div style="font-size:12px;font-weight:600;color:#c8e8ff;margin-bottom:10px;">Risk level distribution</div>
+    <div style="position:relative;width:100%;height:160px;">
+      <canvas id="donutC" role="img" aria-label="Donut chart: Low 10 filings, Moderate 5, Elevated 5, High 5"></canvas>
+    </div>
+  </div>
+  <div class="mini-panel">
+    <div style="font-size:12px;font-weight:600;color:#c8e8ff;margin-bottom:10px;">Top risk drivers</div>
+    <canvas id="driversCanvas" height="160" aria-label="Animated risk drivers bar chart"></canvas>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+const FONT="'Inter',sans-serif";
+
+/* ── ANIMATED ICEBERG BACKGROUND ── */
+(function(){
+  const cvs=document.getElementById('bgCanvas');
+  const ctx=cvs.getContext('2d');
+  let W,H,t=0;
+  const particles=[];
+  const bubbles=[];
+
+  function resize(){
+    W=cvs.width=cvs.offsetWidth;
+    H=cvs.height=cvs.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  for(let i=0;i<60;i++){
+    particles.push({x:Math.random()*1200,y:Math.random()*900,r:Math.random()*1.5+.3,vx:(Math.random()-.5)*.15,vy:Math.random()*.1+.05,a:Math.random()*.6+.2});
+  }
+  for(let i=0;i<20;i++){
+    bubbles.push({x:Math.random()*1200,y:Math.random()*900+200,r:Math.random()*3+1,vy:-(Math.random()*.4+.1),a:Math.random()*.4+.1});
+  }
+
+  function drawBg(){
+    const grad=ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,'#020e25');
+    grad.addColorStop(.35,'#031a4a');
+    grad.addColorStop(.6,'#042060');
+    grad.addColorStop(1,'#010810');
+    ctx.fillStyle=grad;
+    ctx.fillRect(0,0,W,H);
+
+    const aurora=ctx.createLinearGradient(0,0,W,H*.4);
+    aurora.addColorStop(0,'rgba(30,120,200,.06)');
+    aurora.addColorStop(.5,'rgba(80,200,255,.04)');
+    aurora.addColorStop(1,'rgba(100,80,220,.05)');
+    ctx.fillStyle=aurora;
+    ctx.fillRect(0,0,W,H*.5);
+  }
+
+  function drawIceberg(){
+    const cx=W*.72,cy=H*.18,sc=Math.min(W,H)*.35;
+    ctx.save();
+
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-sc*.55);
+    ctx.lineTo(cx+sc*.28,cy-sc*.1);
+    ctx.lineTo(cx+sc*.38,cy+sc*.05);
+    ctx.lineTo(cx+sc*.15,cy+sc*.08);
+    ctx.lineTo(cx+sc*.45,cy+sc*.18);
+    ctx.lineTo(cx+sc*.18,cy+sc*.22);
+    ctx.lineTo(cx+sc*.35,cy+sc*.55);
+    ctx.lineTo(cx+sc*.08,cy+sc*.7);
+    ctx.lineTo(cx-sc*.05,cy+sc*.75);
+    ctx.lineTo(cx-sc*.22,cy+sc*.68);
+    ctx.lineTo(cx-sc*.38,cy+sc*.5);
+    ctx.lineTo(cx-sc*.2,cy+sc*.28);
+    ctx.lineTo(cx-sc*.42,cy+sc*.15);
+    ctx.lineTo(cx-sc*.3,cy+sc*.06);
+    ctx.lineTo(cx-sc*.35,cy-sc*.08);
+    ctx.closePath();
+
+    const ig=ctx.createLinearGradient(cx-sc*.5,cy-sc*.6,cx+sc*.5,cy+sc*.8);
+    ig.addColorStop(0,'rgba(180,230,255,.12)');
+    ig.addColorStop(.4,'rgba(100,180,255,.08)');
+    ig.addColorStop(1,'rgba(30,80,180,.04)');
+    ctx.fillStyle=ig;
+    ctx.fill();
+    ctx.strokeStyle='rgba(140,210,255,.18)';
+    ctx.lineWidth=.8;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx-sc*.05,cy+sc*.75);
+    ctx.lineTo(cx-sc*.22,cy+sc*.68);
+    ctx.lineTo(cx-sc*.38,cy+sc*.5);
+    ctx.lineTo(cx-sc*.35,cy+sc*.9);
+    ctx.lineTo(cx+sc*.2,cy+sc*.95);
+    ctx.lineTo(cx+sc*.08,cy+sc*.7);
+    ctx.closePath();
+    const ig2=ctx.createLinearGradient(cx,cy+sc*.6,cx,cy+sc);
+    ig2.addColorStop(0,'rgba(30,100,200,.07)');
+    ig2.addColorStop(1,'rgba(10,40,120,.03)');
+    ctx.fillStyle=ig2;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawWaterline(){
+    const wl=H*.32;
+    ctx.save();
+    for(let x=0;x<W;x+=3){
+      const wave=Math.sin(x*.012+t*.8)*3+Math.sin(x*.025-t*.5)*2;
+      const a=.06+Math.sin(x*.008+t)*.02;
+      ctx.fillStyle=`rgba(80,180,255,${a})`;
+      ctx.fillRect(x,wl+wave,3,1.2);
+    }
+    ctx.restore();
+  }
+
+  function drawParticles(){
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0)p.x=W; if(p.x>W)p.x=0;
+      if(p.y>H)p.y=0;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(150,210,255,${p.a})`;
+      ctx.fill();
+    });
+    bubbles.forEach(b=>{
+      b.y+=b.vy;
+      if(b.y<-10)b.y=H+10;
+      ctx.beginPath();
+      ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(100,200,255,${b.a})`;
+      ctx.lineWidth=.5;
+      ctx.stroke();
+    });
+  }
+
+  function drawGridLines(){
+    ctx.save();
+    ctx.strokeStyle='rgba(80,140,220,.06)';
+    ctx.lineWidth=.5;
+    for(let x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    ctx.restore();
+  }
+
+  function loop(){
+    t+=.008;
+    drawBg();
+    drawGridLines();
+    drawIceberg();
+    drawWaterline();
+    drawParticles();
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* ── ANIMATED GAUSSIAN BELL CURVES ── */
+(function(){
+  const cvs=document.getElementById('gaussCanvas');
+  const ctx=cvs.getContext('2d');
+  let W,H,t=0;
+
+  const companies=[
+    {name:'Boeing', peak:91.4, sigma:6, color:'#5bc8ff', phase:0},
+    {name:'Tesla',  peak:57.8, sigma:7, color:'#a78bfa', phase:.4},
+    {name:'Amazon', peak:36.9, sigma:6.5,color:'#34d399',phase:.8},
+    {name:'Pfizer', peak:14.7, sigma:5, color:'#fb7185', phase:1.2},
+    {name:'Airbnb', peak:3.1,  sigma:4, color:'#fbbf24', phase:1.6},
+  ];
+
+  function gauss(x,mu,sig){return Math.exp(-((x-mu)**2)/(2*sig*sig));}
+
+  function resize(){
+    const rect=cvs.getBoundingClientRect();
+    W=cvs.width=rect.width*devicePixelRatio||580;
+    H=cvs.height=240*devicePixelRatio||240;
+    cvs.style.height='240px';
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  const PAD_L=50,PAD_R=20,PAD_T=20,PAD_B=45;
+  const scoreMax=1950;
+
+  function scoreToX(s){return PAD_L+(s/100)*(W-PAD_L-PAD_R);}
+  function ampToY(a){return H-PAD_B-(a*(H-PAD_T-PAD_B));}
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    t+=.012;
+
+    ctx.strokeStyle='rgba(100,160,220,.15)';
+    ctx.lineWidth=.5;
+    for(let i=0;i<=4;i++){
+      const y=ampToY(i/4);
+      ctx.beginPath();ctx.moveTo(PAD_L,y);ctx.lineTo(W-PAD_R,y);ctx.stroke();
+    }
+
+    companies.forEach((co)=>{
+      const anim=Math.sin(t+co.phase)*.04+1;
+      const peakAmp=anim*(co.peak/100)*(scoreMax/400);
+      const peakNorm=peakAmp/((scoreMax/400)*1.05);
+
+      ctx.beginPath();
+      let first=true;
+      for(let px=PAD_L;px<=W-PAD_R;px++){
+        const score=(px-PAD_L)/(W-PAD_L-PAD_R)*100;
+        const norm=gauss(score,co.peak,co.sigma)*peakNorm;
+        const y=ampToY(norm);
+        if(first){ctx.moveTo(px,y);first=false;}
+        else ctx.lineTo(px,y);
+      }
+      ctx.lineTo(W-PAD_R,ampToY(0));
+      ctx.lineTo(PAD_L,ampToY(0));
+      ctx.closePath();
+
+      const grad=ctx.createLinearGradient(0,ampToY(peakNorm),0,ampToY(0));
+      grad.addColorStop(0,co.color+'cc');
+      grad.addColorStop(.5,co.color+'55');
+      grad.addColorStop(1,co.color+'08');
+      ctx.fillStyle=grad;
+      ctx.fill();
+
+      ctx.beginPath();
+      first=true;
+      for(let px=PAD_L;px<=W-PAD_R;px++){
+        const score=(px-PAD_L)/(W-PAD_L-PAD_R)*100;
+        const norm=gauss(score,co.peak,co.sigma)*peakNorm;
+        const y=ampToY(norm);
+        if(first){ctx.moveTo(px,y);first=false;}
+        else ctx.lineTo(px,y);
+      }
+      ctx.strokeStyle=co.color;
+      ctx.lineWidth=2;
+      ctx.stroke();
+
+      const peakX=scoreToX(co.peak);
+      const peakY=ampToY(peakNorm);
+      ctx.fillStyle=co.color;
+      ctx.font=`600 12px ${FONT}`;
+      ctx.textAlign='center';
+      ctx.fillText(co.name,peakX,peakY-10);
+      ctx.font=`500 11px ${FONT}`;
+      ctx.fillStyle='rgba(200,230,255,.9)';
+      ctx.fillText(co.peak.toFixed(1),peakX,peakY-24);
+    });
+
+    ctx.strokeStyle='rgba(100,180,255,.3)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(PAD_L,PAD_T);ctx.lineTo(PAD_L,H-PAD_B);ctx.lineTo(W-PAD_R,H-PAD_B);ctx.stroke();
+
+    const ticks=[0,20,40,60,80,100];
+    ctx.font=`500 11px ${FONT}`;
+    ctx.textAlign='center';
+    ctx.fillStyle='rgba(160,210,255,.8)';
+    ticks.forEach(s=>{
+      const x=scoreToX(s);
+      ctx.fillText(s,x,H-PAD_B+16);
+    });
+
+    ctx.textAlign='center';
+    ctx.font=`500 12px ${FONT}`;
+    ctx.fillStyle='rgba(140,200,255,.7)';
+    ctx.fillText('SEC Filing Risk Score (0–100)',W/2,H-4);
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ── 3D ROTATING RISK CUBE ── */
+(function(){
+  const cvs=document.getElementById('cubeCanvas');
+  const ctx=cvs.getContext('2d');
+  const W=280,H=280;
+
+  let rotX=.45,rotY=.6,rotZ=0,dragging=false,lx,ly;
+  let autoRot=true;
+  let t=0;
+
+  const FACES=[
+    {label:'High Risk',color:'rgba(239,68,68,.75)',textCol:'#fff',co:'Boeing',score:91.4},
+    {label:'Elevated',color:'rgba(249,115,22,.75)',textCol:'#fff',co:'Tesla',score:57.8},
+    {label:'Moderate',color:'rgba(245,158,11,.8)', textCol:'#fff',co:'Amazon',score:36.9},
+    {label:'Low Risk',color:'rgba(34,197,94,.75)', textCol:'#fff',co:'Pfizer',score:14.7},
+    {label:'Portfolio',color:'rgba(59,130,246,.7)', textCol:'#fff',co:'All',score:52.3},
+    {label:'Analysis', color:'rgba(139,92,246,.7)', textCol:'#fff',co:'NLP',score:100},
+  ];
+
+  const VERTS=[
+    [-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
+    [-1,-1, 1],[1,-1, 1],[1,1, 1],[-1,1, 1]
+  ];
+  const FACE_IDX=[[0,1,2,3],[4,5,6,7],[0,4,7,3],[1,5,6,2],[0,1,5,4],[3,2,6,7]];
+
+  function mulM(m,v){
+    return[
+      m[0]*v[0]+m[1]*v[1]+m[2]*v[2],
+      m[3]*v[0]+m[4]*v[1]+m[5]*v[2],
+      m[6]*v[0]+m[7]*v[1]+m[8]*v[2]
+    ];
+  }
+  function rotMX(a){return[1,0,0,0,Math.cos(a),-Math.sin(a),0,Math.sin(a),Math.cos(a)];}
+  function rotMY(a){return[Math.cos(a),0,Math.sin(a),0,1,0,-Math.sin(a),0,Math.cos(a)];}
+
+  function project(v){
+    const z=v[2]+3.5;
+    const fov=W*.55;
+    return{x:v[0]*fov/z+W/2, y:v[1]*fov/z+H/2, z:v[2]};
+  }
+
+  function drawFace(fi){
+    const f=FACE_IDX[fi];
+    const my=rotMY(rotY);const mx=rotMX(rotX);
+    const pts=f.map(vi=>{
+      let v=mulM(my,VERTS[vi]);
+      v=mulM(mx,v);
+      return project(v);
+    });
+    const v0=f.map(vi=>{let v=mulM(my,VERTS[vi]);return mulM(mx,v);});
+    const ax=v0[1][0]-v0[0][0],ay=v0[1][1]-v0[0][1],az=v0[1][2]-v0[0][2];
+    const bx=v0[3][0]-v0[0][0],by=v0[3][1]-v0[0][1],bz=v0[3][2]-v0[0][2];
+    const nx=ay*bz-az*by,ny=az*bx-ax*bz,nz=ax*by-ay*bx;
+    const dot=nx*0+ny*0+nz*1;
+    return{pts,dot,fi,avgZ:pts.reduce((s,p)=>s+p.z,0)/4};
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    t+=.008;
+    if(autoRot){rotY+=.007;rotX+=.003;}
+
+    const faces=FACE_IDX.map((_,i)=>drawFace(i));
+    faces.sort((a,b)=>a.avgZ-b.avgZ);
+
+    faces.forEach(({pts,dot,fi})=>{
+      if(dot<0)return;
+      const face=FACES[fi];
+      const bright=Math.max(.3,dot);
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x,pts[0].y);
+      pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+      ctx.closePath();
+      ctx.fillStyle=face.color;
+      ctx.globalAlpha=bright*.85+.1;
+      ctx.fill();
+      ctx.globalAlpha=1;
+      ctx.strokeStyle='rgba(200,235,255,.3)';
+      ctx.lineWidth=.8;
+      ctx.stroke();
+
+      const cx=pts.reduce((s,p)=>s+p.x,0)/4;
+      const cy=pts.reduce((s,p)=>s+p.y,0)/4;
+      ctx.fillStyle=face.textCol;
+      ctx.globalAlpha=bright*.9+.1;
+      ctx.font=`600 13px ${FONT}`;
+      ctx.textAlign='center';
+      ctx.fillText(face.label,cx,cy-8);
+      ctx.font=`500 11px ${FONT}`;
+      ctx.fillStyle='rgba(255,255,255,.85)';
+      ctx.fillText(face.co,cx,cy+6);
+      ctx.font=`600 12px ${FONT}`;
+      ctx.fillStyle='rgba(255,235,150,.95)';
+      ctx.fillText(face.score.toFixed(1),cx,cy+20);
+      ctx.globalAlpha=1;
+
+      const pulse=Math.sin(t*2+fi)*.5+.5;
+      const dotR=4+pulse*2;
+      ctx.beginPath();
+      ctx.arc(cx+18,cy-12,dotR,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,230,100,${.4+pulse*.4})`;
+      ctx.fill();
+    });
+
+    ctx.strokeStyle='rgba(100,200,255,.15)';
+    ctx.lineWidth=.5;
+    [[20,10,20,H-10],[W-20,10,W-20,H-10],[10,20,W-10,20],[10,H-20,W-10,H-20]].forEach(([x1,y1,x2,y2])=>{
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    });
+
+    ctx.font=`500 11px ${FONT}`;
+    ctx.fillStyle='rgba(140,200,255,.6)';
+    ctx.textAlign='center';
+    ctx.fillText('drag to rotate · auto-spin enabled',W/2,H-8);
+
+    requestAnimationFrame(draw);
+  }
+
+  cvs.addEventListener('mousedown',e=>{dragging=true;autoRot=false;lx=e.clientX;ly=e.clientY;cvs.style.cursor='grabbing';});
+  window.addEventListener('mouseup',()=>{dragging=false;cvs.style.cursor='grab';setTimeout(()=>autoRot=true,2000);});
+  window.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    rotY+=(e.clientX-lx)*.01;rotX+=(e.clientY-ly)*.01;
+    lx=e.clientX;ly=e.clientY;
+  });
+  cvs.addEventListener('touchstart',e=>{autoRot=false;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
+  cvs.addEventListener('touchmove',e=>{
+    rotY+=(e.touches[0].clientX-lx)*.01;rotX+=(e.touches[0].clientY-ly)*.01;
+    lx=e.touches[0].clientX;ly=e.touches[0].clientY;
+    e.preventDefault();
+  },{passive:false});
+  draw();
+})();
+
+/* ── ANIMATED SCORECARD (canvas — from v2) ── */
+(()=>{
+  const c=document.getElementById('scorecardCanvas'),ctx=c.getContext('2d');
+  const DATA=[
+    {co:'Boeing',avg:91.4,lv:'High',col:'#5bc8ff',lc:'#ef4444'},
+    {co:'Tesla', avg:57.8,lv:'Elevated',col:'#a78bfa',lc:'#f97316'},
+    {co:'Amazon',avg:36.9,lv:'Moderate',col:'#34d399',lc:'#f59e0b'},
+    {co:'Pfizer',avg:14.7,lv:'Low',col:'#fb7185',lc:'#22c55e'},
+    {co:'Airbnb',avg:3.1, lv:'Low',col:'#fbbf24',lc:'#22c55e'},
+  ];
+  let t=0,animated=DATA.map(()=>0);
+  const resize=()=>{const r=c.parentElement.getBoundingClientRect();c.width=r.width-28||240;c.height=200};
+  resize();addEventListener('resize',resize);
+  const draw=()=>{
+    const W=c.width,H=c.height;
+    ctx.clearRect(0,0,W,H);t+=.018;
+    const rowH=H/DATA.length;
+    DATA.forEach((d,i)=>{
+      if(animated[i]<d.avg) animated[i]=Math.min(d.avg,animated[i]+1.8);
+      const y=i*rowH,bH=rowH-8,barW=W-110;
+      const shimmer=Math.sin(t+i*.6)*.5+.5;
+      ctx.fillStyle=`rgba(91,200,255,${.03+shimmer*.03})`;
+      ctx.beginPath();ctx.roundRect(0,y+2,W,bH,6);ctx.fill();
+      /* color dot */
+      ctx.beginPath();ctx.arc(10,y+rowH/2,5,0,Math.PI*2);
+      ctx.fillStyle=d.col;ctx.fill();
+      /* company name */
+      ctx.font=`600 13px ${FONT}`;ctx.fillStyle='#e8f4ff';ctx.textAlign='left';
+      ctx.fillText(d.co,22,y+rowH/2+4);
+      /* bar track */
+      ctx.fillStyle='rgba(255,255,255,.07)';
+      ctx.beginPath();ctx.roundRect(100,y+rowH/2-5,barW,10,5);ctx.fill();
+      /* bar fill */
+      const bw=(animated[i]/100)*barW;
+      const barGr=ctx.createLinearGradient(100,y+rowH/2-5,100,y+rowH/2+5);
+      barGr.addColorStop(0,d.col+'ff');barGr.addColorStop(.5,d.col+'cc');barGr.addColorStop(1,d.col+'88');
+      ctx.fillStyle=barGr;
+      ctx.beginPath();ctx.roundRect(100,y+rowH/2-5,bw,10,5);ctx.fill();
+      /* glow pulse */
+      const gp=Math.sin(t*2+i)*.5+.5;
+      ctx.shadowBlur=8*gp;ctx.shadowColor=d.col;
+      ctx.fillStyle=`rgba(255,255,255,${.25*gp})`;
+      ctx.beginPath();ctx.roundRect(100,y+rowH/2-2,Math.min(bw,20),4,2);ctx.fill();
+      ctx.shadowBlur=0;
+      /* score */
+      ctx.font=`700 13px ${FONT}`;ctx.fillStyle=d.lc;ctx.textAlign='right';
+      ctx.fillText(d.avg.toFixed(1),W-4,y+rowH/2+4);
+    });
+    requestAnimationFrame(draw);
+  };
+  draw();
+})();
+
+/* ── STATIC DONUT CHART (Chart.js — from old version) ── */
+new Chart(document.getElementById('donutC'),{
+  type:'doughnut',
+  data:{
+    labels:['Low','Moderate','Elevated','High'],
+    datasets:[{data:[10,5,5,5],backgroundColor:['#22c55e','#f59e0b','#f97316','#ef4444'],borderColor:'rgba(2,15,45,.8)',borderWidth:2,hoverOffset:8}]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,cutout:'62%',
+    animation:{duration:0},
+    plugins:{
+      legend:{display:true,position:'bottom',labels:{color:'#a8d4f0',font:{size:11,family:'Inter,sans-serif'},padding:8,boxWidth:10,boxHeight:10}},
+      tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw} filings`}}
+    }
+  }
+});
+
+/* ── ANIMATED 3D DRIVERS (canvas — from v2) ── */
+(()=>{
+  const c=document.getElementById('driversCanvas'),ctx=c.getContext('2d');
+  const DRIVERS=[
+    {name:'Revenue/Demand',val:36.9,col:'#5bc8ff'},
+    {name:'Regulatory',    val:31.1,col:'#a78bfa'},
+    {name:'Supply Chain',  val:22.5,col:'#34d399'},
+    {name:'Macroeconomic', val:8.9, col:'#fbbf24'},
+    {name:'Debt/Credit',   val:8.7, col:'#fb7185'},
+  ];
+  let t=0,progress=DRIVERS.map(()=>0);
+  const resize=()=>{const r=c.parentElement.getBoundingClientRect();c.width=r.width-28||240;c.height=160};
+  resize();addEventListener('resize',resize);
+  const draw=()=>{
+    const W=c.width,H=c.height;
+    ctx.clearRect(0,0,W,H);t+=.016;
+    progress=progress.map((p,i)=>Math.min(1,p+.02+i*.003));
+    const rowH=H/DRIVERS.length,maxVal=DRIVERS[0].val,PL=92;
+    DRIVERS.forEach((d,i)=>{
+      const y=i*rowH+4,bH=rowH-10;
+      const barW=(W-PL-8)*(d.val/maxVal)*progress[i];
+      const depth=4;
+      /* side face */
+      ctx.fillStyle=d.col+'44';
+      ctx.beginPath();
+      ctx.moveTo(PL,y);ctx.lineTo(PL+barW,y);
+      ctx.lineTo(PL+barW+depth,y-depth);ctx.lineTo(PL+depth,y-depth);
+      ctx.closePath();ctx.fill();
+      /* front face gradient */
+      const gr=ctx.createLinearGradient(PL,y,PL,y+bH);
+      gr.addColorStop(0,d.col+'ff');gr.addColorStop(1,d.col+'88');
+      ctx.fillStyle=gr;
+      ctx.beginPath();ctx.roundRect(PL,y,barW,bH,3);ctx.fill();
+      /* shine strip */
+      ctx.fillStyle='rgba(255,255,255,.12)';
+      ctx.beginPath();ctx.roundRect(PL,y,barW*.6,bH*.35,2);ctx.fill();
+      /* animated scan line */
+      const scan=(Math.sin(t*2+i*.5)+1)/2;
+      const scanX=PL+barW*scan;
+      ctx.fillStyle=`rgba(255,255,255,${.22*(1-Math.abs(scan-.5)*2)})`;
+      ctx.fillRect(scanX-1,y,3,bH);
+      /* label */
+      ctx.font=`600 11px ${FONT}`;ctx.fillStyle='#c8e8ff';ctx.textAlign='right';
+      ctx.fillText(d.name,PL-5,y+bH/2+4);
+      /* value */
+      if(progress[i]>.4){
+        ctx.font=`700 11px ${FONT}`;ctx.fillStyle=d.col;ctx.textAlign='left';
+        ctx.fillText(d.val.toFixed(1),PL+barW+depth+4,y+bH/2+4);
+      }
+    });
+    /* axis */
+    ctx.strokeStyle='rgba(100,180,255,.2)';ctx.lineWidth=.5;
+    ctx.beginPath();ctx.moveTo(PL,0);ctx.lineTo(PL,H);ctx.stroke();
+    requestAnimationFrame(draw);
+  };
+  draw();
+})();
+</script>
+</body>
+</html>
