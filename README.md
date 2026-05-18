@@ -398,7 +398,11 @@ Planned improvements include:
 - Add model monitoring and versioning
 - Improve dashboard deployment and public demo access
 
----
+## Live Demo
+
+View the animated ClairvoyAI dashboard here:
+
+https://phoenixcoder26.github.io/ClairvoyAI/
 
 ## Portfolio Summary
 
