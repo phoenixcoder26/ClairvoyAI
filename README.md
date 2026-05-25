@@ -6,6 +6,14 @@ The project integrates natural language processing, PostgreSQL database design, 
 
 ---
 
+## Live Demo
+
+View the animated ClairvoyAI dashboard here:
+
+https://phoenixcoder26.github.io/ClairvoyAI/
+
+---
+
 ## Project Objective
 
 The objective of ClairvoyAI is to reduce the manual burden of reviewing long-form SEC 10-K risk disclosures by converting unstructured Item 1A text into structured, interpretable, and decision-ready risk intelligence.
@@ -55,6 +63,7 @@ Completed components include:
 - Saved ML artifacts and prediction outputs
 - Interactive Streamlit dashboard
 - Animated HTML dashboard concept for portfolio presentation
+- Planned AWS cloud architecture design
 
 ---
 
@@ -151,6 +160,25 @@ Final loaded row counts:
 - `agent_recommendations`: 25 rows
 
 The SQL layer supports portfolio-level analysis, company-level trend analysis, risk-driver aggregation, year-over-year score movement, and analyst action review.
+
+---
+
+## SQL Analytics Layer
+
+The PostgreSQL layer was used to validate the structured risk outputs and generate analytical views for dashboarding.
+
+Example SQL analyses included:
+
+- Average risk score by company
+- Highest-risk filings by ticker and fiscal year
+- Top risk drivers by company-year
+- Year-over-year risk score movement
+- Risk-level distribution across the portfolio
+- Analyst recommendation review
+- Risk-driver aggregation across companies
+- Company-level trend ranking
+
+This SQL layer strengthens the project by demonstrating relational data modeling, database normalization, query-based validation, and analytical reporting.
 
 ---
 
@@ -292,6 +320,80 @@ This animated page is intended as a visual landing page or demo mode. The Stream
 
 ---
 
+## Planned AWS Cloud Architecture
+
+ClairvoyAI was developed locally as an end-to-end analytics MVP using Python, PostgreSQL, machine learning, TensorFlow/Keras, and Streamlit. A future cloud deployment would extend the system into AWS for scalable storage, managed relational analytics, automated monitoring, and analyst alerting.
+
+The proposed AWS architecture includes:
+
+- Amazon S3 for storing raw SEC filings, processed CSV outputs, model artifacts, and dashboard assets.
+- Amazon RDS PostgreSQL to replace the local Docker PostgreSQL database with a managed relational database.
+- Amazon EC2 or AWS App Runner to host the Streamlit dashboard.
+- AWS Lambda for scheduled filing checks and automated risk-monitoring workflows.
+- Amazon CloudWatch for pipeline logs, dashboard monitoring, and operational observability.
+- Amazon SNS for analyst email alerts when a filing crosses an Elevated or High-risk threshold.
+
+Target architecture:
+
+```text
+SEC EDGAR / Processed Filing Inputs
+        ↓
+Amazon S3
+        ↓
+Python NLP Risk-Scoring Pipeline
+        ↓
+Amazon RDS PostgreSQL
+        ↓
+Streamlit Dashboard on EC2 / App Runner
+        ↓
+CloudWatch Monitoring
+        ↓
+SNS Analyst Alerts
+```
+
+This planned architecture would allow ClairvoyAI to scale from a local proof of concept into a cloud-ready financial risk intelligence platform.
+
+---
+
+## Advanced NLP Roadmap
+
+The current MVP uses an interpretable keyword-based NLP framework to extract and normalize risk-driver signals from SEC 10-K Item 1A disclosures. This approach was selected for transparency, auditability, and explainability.
+
+Future NLP enhancements may include:
+
+- FinBERT or transformer-based classification for finance-specific risk language.
+- Sentence-level embedding search to retrieve the most relevant evidence for each risk driver.
+- Topic modeling to identify emerging or unexpected risk themes.
+- Semantic clustering of risk-factor language across companies and years.
+- Uncertainty and sentiment scoring to measure cautionary or negative disclosure tone.
+- Named entity recognition to identify regulators, suppliers, geographies, products, and litigation-related entities.
+- Retrieval-augmented analyst summaries using filing-level evidence snippets.
+
+These enhancements would move ClairvoyAI from keyword-based signal extraction toward deeper semantic risk intelligence.
+
+---
+
+## Product Analytics and A/B Testing Roadmap
+
+A future product analytics layer could evaluate how different dashboard designs affect analyst decision-making.
+
+Potential A/B testing design:
+
+- Version A: risk-score leaderboard and company trend charts only.
+- Version B: risk-score leaderboard, evidence snippets, top risk drivers, and recommended analyst actions.
+
+Potential evaluation metrics:
+
+- Time required to identify the highest-priority filing.
+- Analyst confidence in the recommendation.
+- Accuracy of risk-prioritization decisions.
+- Click-through rate on filing-level evidence sections.
+- Usage of filters, drill-downs, and ML intelligence panels.
+
+This would extend ClairvoyAI beyond modeling into decision-support product analytics.
+
+---
+
 ## Technical Stack
 
 ### Data Processing
@@ -340,6 +442,15 @@ This animated page is intended as a visual landing page or demo mode. The Stream
 - CSS
 - JavaScript
 
+### Planned Cloud Architecture
+
+- Amazon S3
+- Amazon RDS PostgreSQL
+- Amazon EC2 / AWS App Runner
+- AWS Lambda
+- Amazon CloudWatch
+- Amazon SNS
+
 ### Project Management
 
 - GitHub
@@ -367,6 +478,7 @@ Data/processed/ml_prediction_detail.csv
 models/clairvoyai_nn.keras
 src/load_to_postgres.py
 notebooks/
+reports/charts/
 ```
 
 Raw SEC filing files, environment files, local database credentials, and cache folders are excluded from GitHub when needed.
@@ -380,6 +492,7 @@ Raw SEC filing files, environment files, local database credentials, and cache f
 - The risk score measures disclosure-language risk intensity, not stock performance, default probability, credit risk, or investment attractiveness.
 - TensorFlow/Keras results are experimental and should not be interpreted as production-grade deep learning performance.
 - The ML labels are derived from the project’s rule-based scoring framework.
+- The AWS layer is currently documented as a planned cloud architecture rather than a fully deployed production system.
 - Future work should expand the dataset across more companies, sectors, and filing years.
 
 ---
@@ -388,26 +501,23 @@ Raw SEC filing files, environment files, local database credentials, and cache f
 
 Planned improvements include:
 
-- Expand the dataset from 25 filings to 75–150+ filings
-- Add additional sectors and companies
-- Connect Streamlit directly to PostgreSQL analytical views
-- Add AWS deployment architecture using S3, Lambda, RDS PostgreSQL, SNS, and CloudWatch
-- Add FinBERT or transformer-based raw-text modeling
-- Add automated SEC filing ingestion
-- Add alerting for newly identified High-risk filings
-- Add model monitoring and versioning
-- Improve dashboard deployment and public demo access
+- Expand the dataset from 25 filings to 75–150+ filings.
+- Add additional sectors and companies.
+- Connect Streamlit directly to PostgreSQL analytical views.
+- Extend the planned AWS deployment architecture using S3, Lambda, RDS PostgreSQL, SNS, and CloudWatch.
+- Add FinBERT or transformer-based raw-text modeling.
+- Add automated SEC filing ingestion.
+- Add alerting for newly identified High-risk filings.
+- Add model monitoring and versioning.
+- Improve dashboard deployment and public demo access.
+- Add product analytics and A/B testing to evaluate dashboard decision-support effectiveness.
 
-## Live Demo
-
-View the animated ClairvoyAI dashboard here:
-
-https://phoenixcoder26.github.io/ClairvoyAI/
+---
 
 ## Portfolio Summary
 
 ClairvoyAI demonstrates a full-cycle applied analytics workflow for financial risk intelligence.
 
-The project combines financial text analytics, structured database design, SQL-based validation, machine learning benchmarking, neural-network experimentation, and executive dashboard design.
+The project combines financial text analytics, structured database design, SQL-based validation, machine learning benchmarking, neural-network experimentation, planned cloud architecture, and executive dashboard design.
 
 It is designed as a portfolio-ready project for roles involving applied analytics, financial data science, risk intelligence, machine learning, and decision-support systems.
