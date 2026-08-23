@@ -93,10 +93,11 @@ body{font-family:'Inter',-apple-system,sans-serif}
 #driversCanvas{width:100%;display:block;}
 
 /* ── RAG RETRIEVAL EXPLORER ── */
-.rag-row{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px;}
+.rag-row{display:grid;grid-template-columns:1.7fr 1fr;gap:14px;margin-bottom:14px;}
 .rag-sub{font-size:11px;color:#7bbfd8;margin:-8px 0 12px;letter-spacing:.02em;}
-#ragGalaxyWrap{position:relative;width:100%;height:320px;}
-#ragGalaxyCanvas{width:100%;height:100%;display:block;border-radius:8px;cursor:grab;}
+#ragGalaxyWrap{position:relative;width:100%;height:480px;border-radius:10px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,rgba(30,50,110,.5) 0%,rgba(6,12,32,.9) 65%,rgba(2,6,18,1) 100%);}
+#ragStarsCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+#ragGalaxyCanvas{position:relative;width:100%;height:100%;display:block;border-radius:10px;cursor:grab;}
 .rag-questions{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
 .rag-chip{
   font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:#a8d4f0;
@@ -218,6 +219,7 @@ body{font-family:'Inter',-apple-system,sans-serif}
     <div class="panel-title"><i class="ti ti-atom-2" aria-hidden="true"></i>RAG retrieval galaxy — TF-IDF evidence space</div>
     <div class="rag-sub">25 filings clustered by company · pick a question to watch retrieval happen</div>
     <div id="ragGalaxyWrap">
+      <canvas id="ragStarsCanvas"></canvas>
       <canvas id="ragGalaxyCanvas" role="img" aria-label="3D scatter of filings with animated retrieval beams from a query node to the top matching filings"></canvas>
     </div>
     <div class="rag-pipeline">
@@ -957,6 +959,44 @@ new Chart(document.getElementById('donutC'),{
 
 /* ── RAG RETRIEVAL GALAXY (3D) + ANALYST ASSISTANT ── */
 (()=>{
+  /* ---- drifting starfield + nebula backdrop ---- */
+  (function(){
+    const sc=document.getElementById('ragStarsCanvas'), sctx=sc.getContext('2d');
+    let SW,SH,st=0;
+    const stars=[];
+    function sresize(){
+      const r=sc.parentElement.getBoundingClientRect();
+      SW=sc.width=r.width; SH=sc.height=r.height;
+    }
+    sresize(); addEventListener('resize',sresize);
+    for(let i=0;i<160;i++){
+      stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.4+.3,a:Math.random()*.6+.2,tw:Math.random()*Math.PI*2,sp:Math.random()*.6+.2});
+    }
+    const nebulae=[
+      {x:.22,y:.28,r:.55,c:'91,200,255'},
+      {x:.78,y:.65,r:.5, c:'167,139,250'},
+      {x:.5, y:.85,r:.45,c:'52,211,153'},
+    ];
+    function sdraw(){
+      sctx.clearRect(0,0,SW,SH); st+=.006;
+      nebulae.forEach((n,i)=>{
+        const cx=n.x*SW+Math.sin(st*.3+i)*20, cy=n.y*SH+Math.cos(st*.25+i)*20;
+        const g=sctx.createRadialGradient(cx,cy,0,cx,cy,n.r*Math.max(SW,SH));
+        g.addColorStop(0,`rgba(${n.c},.10)`); g.addColorStop(1,'rgba(0,0,0,0)');
+        sctx.fillStyle=g; sctx.fillRect(0,0,SW,SH);
+      });
+      stars.forEach(s=>{
+        const tw=Math.sin(st*s.sp*3+s.tw)*.5+.5;
+        sctx.beginPath();
+        sctx.arc(s.x*SW,s.y*SH,s.r,0,Math.PI*2);
+        sctx.fillStyle=`rgba(210,235,255,${s.a*(.5+tw*.5)})`;
+        sctx.fill();
+      });
+      requestAnimationFrame(sdraw);
+    }
+    sdraw();
+  })();
+
   const CLUSTERS=[
     {name:'Boeing', col:'#5bc8ff', az:0},
     {name:'Tesla',  col:'#a78bfa', az:72},
@@ -1098,7 +1138,7 @@ new Chart(document.getElementById('donutC'),{
   }
 
   function idxNear(mx,my,pts){
-    let best=-1,bd=16;
+    let best=-1,bd=26;
     pts.forEach((p,i)=>{
       const d=Math.hypot(p.sx-mx,p.sy-my);
       if(d<bd){bd=d;best=i;}
@@ -1180,29 +1220,34 @@ new Chart(document.getElementById('donutC'),{
       const f=FILINGS[i], p=pts[i];
       const isRet=hasActive&&retrievedIdxs.includes(i);
       const dim=hasActive&&!isRet;
-      const baseR=2.4+(f.score/100)*4.2;
+      const baseR=4.5+(f.score/100)*8.5;
       const r=baseR*(p.persp/ (Math.min(W,H)*.42*1.6/3.2));
       let alpha=dim?.14:.92;
       if(isRet) alpha=1;
       ctx.globalAlpha=alpha;
-      ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(r,1.8),0,Math.PI*2);
+      ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(r,3.2),0,Math.PI*2);
       ctx.fillStyle=f.col;
-      if(isRet||hoverIdx===i){ ctx.shadowBlur=12; ctx.shadowColor=f.col; }
+      if(isRet||hoverIdx===i){ ctx.shadowBlur=18; ctx.shadowColor=f.col; }
       ctx.fill(); ctx.shadowBlur=0;
       if(isRet){
-        ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=1.1; ctx.stroke();
+        ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.lineWidth=1.6; ctx.stroke();
       }
+      // soft glossy highlight for a "bubble" feel
+      ctx.beginPath();
+      ctx.arc(p.x-r*.32,p.y-r*.32,Math.max(r*.35,1),0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,.35)';
+      ctx.fill();
       ctx.globalAlpha=1;
     });
 
     // query node (gold core)
-    ctx.beginPath(); ctx.arc(qProj.x,qProj.y,6+Math.sin(t*3)*1.2,0,Math.PI*2);
-    const qg=ctx.createRadialGradient(qProj.x,qProj.y,0,qProj.x,qProj.y,9);
+    ctx.beginPath(); ctx.arc(qProj.x,qProj.y,10+Math.sin(t*3)*1.8,0,Math.PI*2);
+    const qg=ctx.createRadialGradient(qProj.x,qProj.y,0,qProj.x,qProj.y,15);
     qg.addColorStop(0,'#fff6d8'); qg.addColorStop(1,'#f0abfc');
-    ctx.fillStyle=qg; ctx.shadowBlur=16; ctx.shadowColor='#fbbf24';
+    ctx.fillStyle=qg; ctx.shadowBlur=26; ctx.shadowColor='#fbbf24';
     ctx.fill(); ctx.shadowBlur=0;
-    ctx.font=`600 10px ${FONT}`; ctx.fillStyle='rgba(255,240,200,.9)'; ctx.textAlign='center';
-    ctx.fillText(hasActive?'query':'', qProj.x, qProj.y-13);
+    ctx.font=`600 12px ${FONT}`; ctx.fillStyle='rgba(255,240,200,.9)'; ctx.textAlign='center';
+    ctx.fillText(hasActive?'query':'', qProj.x, qProj.y-19);
 
     // hover tooltip
     if(hoverIdx>=0){
