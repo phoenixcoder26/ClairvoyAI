@@ -1,9 +1,8 @@
 # ClairvoyAI: Agentic SEC Filing Risk Intelligence System
 
-ClairvoyAI is an end-to-end financial risk intelligence project that transforms SEC 10-K Item 1A Risk Factor disclosures into structured risk signals, normalized risk scores, analyst-facing recommendations, machine learning benchmarks, and interactive dashboard outputs.
+ClairvoyAI is an end-to-end financial risk intelligence project that transforms SEC 10-K Item 1A Risk Factor disclosures into structured risk signals, normalized disclosure-risk scores, analyst-facing recommendations, machine learning benchmarks, advanced NLP similarity diagnostics, a RAG-style analyst assistant, and interactive dashboard outputs.
 
-The project integrates natural language processing, PostgreSQL database design, SQL analytics, classical machine learning, an experimental TensorFlow/Keras neural network, and executive-style dashboarding to demonstrate a complete applied analytics workflow for financial risk intelligence.
-
+The project integrates natural language processing, PostgreSQL database design, SQL analytics, classical machine learning, an experimental TensorFlow/Keras neural network, TF-IDF similarity analysis, risk-theme clustering, retrieval-style evidence ranking, and executive-style dashboarding to demonstrate a complete applied analytics workflow for financial risk intelligence.
 ---
 
 ## Live Demo
@@ -60,6 +59,9 @@ Completed components include:
 - SQL analytics and validation queries
 - Classical machine learning benchmarking
 - Experimental TensorFlow/Keras neural network modeling
+- Advanced NLP similarity and risk-theme clustering
+- TF-IDF cosine similarity analysis across company-year filings
+- RAG-style analyst assistant for grounded filing-level Q&A
 - Saved ML artifacts and prediction outputs
 - Interactive Streamlit dashboard
 - Animated HTML dashboard concept for portfolio presentation
@@ -92,8 +94,11 @@ PostgreSQL storage
         ↓
 SQL analytics + ML benchmarking
         ↓
+Advanced NLP similarity + risk-theme clustering
+        ↓
+RAG-style evidence retrieval and analyst Q&A
+        ↓
 Streamlit dashboard / animated portfolio page
-```
 
 ---
 
@@ -225,6 +230,26 @@ Because the current MVP includes only 25 filings, and the risk-level labels are 
 The results indicate that the engineered risk-driver features are highly separable across the current ClairvoyAI risk tiers. However, a larger and more diverse dataset would be required before making claims about real-world generalization, external predictive performance, or production deployment.
 
 ---
+
+
+---
+
+## Advanced NLP Similarity and Risk-Theme Clustering
+
+Phase 4B extends ClairvoyAI beyond keyword-based risk scoring by adding TF-IDF similarity analysis and risk-theme clustering.
+
+The advanced NLP layer converts filing-level evidence, top risk drivers, and analyst explanations into TF-IDF vectors. Cosine similarity is then used to compare risk language across company-year filings and across companies. K-Means clustering and PCA are used to identify disclosure-language groupings and visualize risk-theme patterns in two dimensions.
+
+Advanced NLP outputs include:
+
+- Filing-level TF-IDF cosine similarity matrix
+- Company-level risk-language similarity matrix
+- PCA-based risk-theme clustering
+- Top TF-IDF terms by risk level
+- Evidence-strength diagnostics by company
+- NLP cluster composition by risk level
+
+This phase helps evaluate whether filings with similar risk levels also share similar disclosure-language patterns. Because the MVP contains only 25 filings, the advanced NLP outputs are interpreted as exploratory diagnostics rather than production-grade semantic modeling.
 
 ## Key Findings
 
