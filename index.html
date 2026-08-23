@@ -91,6 +91,40 @@ body{font-family:'Inter',-apple-system,sans-serif}
 /* animated canvas panels */
 #scorecardCanvas{width:100%;display:block;}
 #driversCanvas{width:100%;display:block;}
+
+/* ── RAG RETRIEVAL EXPLORER ── */
+.rag-row{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px;}
+.rag-sub{font-size:11px;color:#7bbfd8;margin:-8px 0 12px;letter-spacing:.02em;}
+#ragGalaxyWrap{position:relative;width:100%;height:320px;}
+#ragGalaxyCanvas{width:100%;height:100%;display:block;border-radius:8px;cursor:grab;}
+.rag-questions{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+.rag-chip{
+  font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:#a8d4f0;
+  background:linear-gradient(145deg,rgba(20,60,110,.6),rgba(10,38,85,.55));
+  border:1px solid rgba(140,210,255,.28);border-radius:20px;padding:6px 12px;
+  cursor:pointer;transition:all .18s ease;letter-spacing:.01em;text-align:left;line-height:1.3;
+}
+.rag-chip:hover{border-color:rgba(140,210,255,.6);color:#e8f4ff;transform:translateY(-1px);}
+.rag-chip.active{
+  background:linear-gradient(145deg,rgba(91,200,255,.28),rgba(167,139,250,.22));
+  border-color:#5bc8ff;color:#fff;
+  box-shadow:0 0 14px rgba(91,200,255,.3),inset 0 1px 0 rgba(255,255,255,.15);
+}
+.rag-section-lbl{font-size:10px;font-weight:700;color:#5bc8ff;text-transform:uppercase;letter-spacing:.1em;margin:4px 0 8px;}
+.rag-ev-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.rag-ev-name{font-size:11px;font-weight:600;color:#dcefff;width:76px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rag-ev-track{flex:1;height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;position:relative;}
+.rag-ev-fill{height:100%;width:0;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.rag-ev-val{font-size:10px;font-weight:700;color:#7bbfd8;width:36px;text-align:right;flex-shrink:0;}
+.rag-answer{
+  margin-top:10px;background:rgba(4,20,50,.55);border:1px solid rgba(140,210,255,.22);
+  border-radius:10px;padding:11px 12px;font-size:12px;line-height:1.55;color:#cfe6fa;
+  min-height:92px;box-shadow:inset 0 1px 0 rgba(180,230,255,.08);
+}
+.rag-cursor{display:inline-block;width:6px;height:12px;background:#5bc8ff;margin-left:1px;vertical-align:middle;animation:pulse 1s step-start infinite;}
+.rag-pipeline{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;flex-wrap:wrap;}
+.rag-pipe-step{font-size:10px;font-weight:600;color:#7bbfd8;background:rgba(20,60,110,.5);border:1px solid rgba(140,210,255,.25);border-radius:14px;padding:4px 10px;letter-spacing:.02em;}
+.rag-pipe-arrow{color:#3d6a8c;font-size:12px;}
 </style>
 </head>
 <body>
@@ -176,6 +210,32 @@ body{font-family:'Inter',-apple-system,sans-serif}
   <div class="mini-panel">
     <div style="font-size:12px;font-weight:600;color:#c8e8ff;margin-bottom:10px;">Top risk drivers</div>
     <canvas id="driversCanvas" height="160" aria-label="Animated risk drivers bar chart"></canvas>
+  </div>
+</div>
+
+<div class="rag-row">
+  <div class="panel">
+    <div class="panel-title"><i class="ti ti-atom-2" aria-hidden="true"></i>RAG retrieval galaxy — TF-IDF evidence space</div>
+    <div class="rag-sub">25 filings clustered by company · pick a question to watch retrieval happen</div>
+    <div id="ragGalaxyWrap">
+      <canvas id="ragGalaxyCanvas" role="img" aria-label="3D scatter of filings with animated retrieval beams from a query node to the top matching filings"></canvas>
+    </div>
+    <div class="rag-pipeline">
+      <div class="rag-pipe-step">Question</div><div class="rag-pipe-arrow">→</div>
+      <div class="rag-pipe-step">TF-IDF vectorize</div><div class="rag-pipe-arrow">→</div>
+      <div class="rag-pipe-step">Cosine similarity</div><div class="rag-pipe-arrow">→</div>
+      <div class="rag-pipe-step">Top-k filings</div><div class="rag-pipe-arrow">→</div>
+      <div class="rag-pipe-step">Grounded answer</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><i class="ti ti-message-chatbot" aria-hidden="true"></i>Analyst assistant</div>
+    <div class="rag-questions" id="ragQuestions"></div>
+    <div class="rag-section-lbl">Retrieved evidence (cosine similarity)</div>
+    <div id="ragEvidence"></div>
+    <div class="rag-section-lbl" style="margin-top:12px;">Grounded response</div>
+    <div class="rag-answer" id="ragAnswer">Select a question above to run retrieval.</div>
   </div>
 </div>
 
@@ -893,6 +953,299 @@ new Chart(document.getElementById('donutC'),{
     requestAnimationFrame(draw);
   };
   draw();
+})();
+
+/* ── RAG RETRIEVAL GALAXY (3D) + ANALYST ASSISTANT ── */
+(()=>{
+  const CLUSTERS=[
+    {name:'Boeing', col:'#5bc8ff', az:0},
+    {name:'Tesla',  col:'#a78bfa', az:72},
+    {name:'Amazon', col:'#34d399', az:144},
+    {name:'Pfizer', col:'#fb7185', az:216},
+    {name:'Airbnb', col:'#fbbf24', az:288},
+  ];
+  const SCORES={
+    Boeing:[100.00,87.15,85.54,77.02,76.89],
+    Tesla:[63.80,71.01,66.04,64.79,67.42],
+    Amazon:[42.75,45.31,46.07,45.71,43.67],
+    Pfizer:[12.50,13.80,14.70,15.90,16.60],
+    Airbnb:[0.00,4.95,5.29,13.41,11.39],
+  };
+  const YEARS=[2021,2022,2023,2024,2025];
+
+  // build 25 filing nodes on a jittered sphere, clustered by company
+  const FILINGS=[];
+  CLUSTERS.forEach((cl,ci)=>{
+    const azRad=cl.az*Math.PI/180;
+    const baseDir=[Math.cos(azRad),Math.sin(azRad)*.5,Math.sin(azRad)];
+    // normalize
+    const bl=Math.hypot(...baseDir); const bd=baseDir.map(v=>v/bl);
+    YEARS.forEach((yr,yi)=>{
+      // deterministic pseudo-random spread per filing
+      const seed=ci*5+yi;
+      const frac=x=>x-Math.floor(x); // always in [0,1)
+      const jx=frac(Math.sin(seed*12.9898)*43758.5453);
+      const jy=frac(Math.sin(seed*78.233)*12345.678);
+      const jz=frac(Math.sin(seed*39.425)*98765.4321);
+      const spread=.42;
+      const pos=[
+        bd[0]*1.15+(jx-.5)*spread,
+        bd[1]*1.15+(jy-.5)*spread+(yi-2)*.07,
+        bd[2]*1.15+(jz-.5)*spread
+      ];
+      FILINGS.push({
+        id:cl.name+' '+yr, company:cl.name, year:yr, col:cl.col,
+        score:SCORES[cl.name][yi], pos
+      });
+    });
+  });
+  function fIdx(id){ return FILINGS.findIndex(f=>f.id===id); }
+
+  const RAG_QUESTIONS=[
+    {
+      q:"Why is Boeing classified as high risk?",
+      retrieved:[["Boeing 2025",.254],["Boeing 2021",.252],["Boeing 2022",.249],["Boeing 2024",.248],["Boeing 2023",.245]],
+      answer:"All five Boeing filings (2021–2025) top the match list, each rated High Risk with scores from 76.9 to 100.0. The dominant themes are Supply Chain Risk, Revenue/Demand Risk, and Regulatory/Litigation Risk — grounded in disclosure language about aerospace platform sustainment, component and supplier availability, and delivery delays. Recommended action: prioritize review and assess financial exposure."
+    },
+    {
+      q:"What evidence supports Tesla's elevated risk level?",
+      retrieved:[["Tesla 2022",.231],["Tesla 2025",.226],["Tesla 2023",.219],["Tesla 2024",.211],["Tesla 2021",.203]],
+      answer:"Tesla's five filings all rank Elevated, with scores between 63.8 and 71.0. Retrieved evidence centers on Supply Chain Risk and Revenue/Demand Risk — unavailability of components or suppliers causing production delays and idle manufacturing capacity — alongside recurring Regulatory/Litigation language. Recommended action: increase monitoring frequency."
+    },
+    {
+      q:"Which companies show the strongest supply chain risk?",
+      retrieved:[["Boeing 2021",.244],["Tesla 2022",.238],["Boeing 2022",.233],["Tesla 2025",.229],["Boeing 2023",.221]],
+      answer:"Boeing and Tesla dominate the Supply Chain Risk retrieval — Boeing through aerospace platform and component-sustainment language, Tesla through supplier/component unavailability that idles manufacturing capacity. Amazon shows a moderate signal tied to inventory and restocking risk, while Airbnb and Pfizer show comparatively low supply-chain disclosure density."
+    },
+    {
+      q:"Compare Amazon and Pfizer risk disclosures.",
+      retrieved:[["Amazon 2023",.227],["Amazon 2022",.221],["Pfizer 2024",.198],["Amazon 2024",.196],["Pfizer 2025",.189]],
+      answer:"Amazon sits at Moderate risk (avg ≈44.7), led by Revenue/Demand and Supply Chain language about failing to stock or restock popular products fast enough to meet demand. Pfizer sits at Low risk (avg ≈14.7), with disclosure concentrated in Regulatory/Litigation and Debt/Credit themes rather than operational supply-chain language — roughly a 3x gap in disclosure-risk intensity."
+    },
+    {
+      q:"What are the main regulatory and litigation risks?",
+      retrieved:[["Airbnb 2025",.219],["Airbnb 2024",.214],["Amazon 2021",.206],["Boeing 2024",.201],["Amazon 2025",.197]],
+      answer:"Regulatory/Litigation Risk shows up across nearly every company. Airbnb's language centers on government information requests and disagreements over local-regulation interpretation; Boeing and Amazon reference frequent legal claims, government inquiries, and compliance investigations. It's a broad theme, but feature-importance analysis found it less discriminating for separating risk tiers than Supply Chain Risk."
+    },
+  ];
+
+  let activeQ=-1, retrievedIdxs=[], beamProgress=[], typeTimer=null;
+
+  /* ---- question chips ---- */
+  const qWrap=document.getElementById('ragQuestions');
+  RAG_QUESTIONS.forEach((rq,i)=>{
+    const b=document.createElement('button');
+    b.className='rag-chip'; b.textContent=rq.q;
+    b.onclick=()=>selectQuestion(i);
+    qWrap.appendChild(b);
+  });
+
+  function selectQuestion(i){
+    activeQ=i;
+    [...qWrap.children].forEach((c,ci)=>c.classList.toggle('active',ci===i));
+    const rq=RAG_QUESTIONS[i];
+    retrievedIdxs=rq.retrieved.map(([id])=>fIdx(id));
+    beamProgress=retrievedIdxs.map(()=>0);
+
+    // evidence bars
+    const evWrap=document.getElementById('ragEvidence');
+    evWrap.innerHTML='';
+    const maxSim=Math.max(...rq.retrieved.map(r=>r[1]));
+    rq.retrieved.forEach(([id,sim])=>{
+      const f=FILINGS[fIdx(id)];
+      const row=document.createElement('div'); row.className='rag-ev-row';
+      row.innerHTML=`<div class="rag-ev-name">${f.company} ${f.year}</div>
+        <div class="rag-ev-track"><div class="rag-ev-fill" style="background:linear-gradient(90deg,${f.col},${f.col}88);"></div></div>
+        <div class="rag-ev-val">${sim.toFixed(3)}</div>`;
+      evWrap.appendChild(row);
+      requestAnimationFrame(()=>{
+        const fill=row.querySelector('.rag-ev-fill');
+        fill.style.width=((sim/maxSim)*100)+'%';
+      });
+    });
+
+    // typewriter answer
+    const ansEl=document.getElementById('ragAnswer');
+    if(typeTimer) clearInterval(typeTimer);
+    ansEl.innerHTML='<span class="rag-cursor"></span>';
+    let chars=0; const full=rq.answer;
+    typeTimer=setInterval(()=>{
+      chars+=3;
+      ansEl.innerHTML=full.slice(0,chars)+'<span class="rag-cursor"></span>';
+      if(chars>=full.length) clearInterval(typeTimer);
+    },14);
+  }
+
+  /* ---- 3D galaxy canvas ---- */
+  const cvs=document.getElementById('ragGalaxyCanvas'),ctx=cvs.getContext('2d');
+  let W,H,rotX=.25,rotY=.5,dragging=false,lx,ly,autoRot=true,t=0;
+  let hoverIdx=-1, lastPts=[];
+
+  function resize(){
+    const r=cvs.parentElement.getBoundingClientRect();
+    W=cvs.width=r.width; H=cvs.height=r.height;
+  }
+  resize(); addEventListener('resize',resize);
+
+  function mulM(m,v){return[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];}
+  function rotMX(a){return[1,0,0,0,Math.cos(a),-Math.sin(a),0,Math.sin(a),Math.cos(a)];}
+  function rotMY(a){return[Math.cos(a),0,Math.sin(a),0,1,0,-Math.sin(a),0,Math.cos(a)];}
+  function project(v){
+    const scale=Math.min(W,H)*.42;
+    const z=v[2]+3.2;
+    const fov=scale*1.6;
+    return{x:v[0]*fov/z+W/2, y:v[1]*fov/z+H/2, z:v[2],persp:fov/z};
+  }
+
+  function idxNear(mx,my,pts){
+    let best=-1,bd=16;
+    pts.forEach((p,i)=>{
+      const d=Math.hypot(p.sx-mx,p.sy-my);
+      if(d<bd){bd=d;best=i;}
+    });
+    return best;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H); t+=.012;
+    if(autoRot&&!dragging) rotY+=.0022;
+
+    const my=rotMY(rotY),mx=rotMX(rotX);
+    // query node at origin, gently bobbing
+    const qPos=mulM(mx,mulM(my,[0,Math.sin(t*1.4)*.05,0]));
+    const qProj=project(qPos);
+
+    const pts=FILINGS.map(f=>{
+      let v=mulM(my,f.pos); v=mulM(mx,v);
+      const p=project(v);
+      p.sx=p.x; p.sy=p.y;
+      return p;
+    });
+    lastPts=pts;
+
+    // faint cluster orbit rings
+    ctx.strokeStyle='rgba(120,190,255,.06)';
+    ctx.lineWidth=.6;
+    for(let ring=0;ring<3;ring++){
+      ctx.beginPath();
+      for(let a=0;a<=Math.PI*2+.1;a+=.1){
+        const r=1.15+ring*.001;
+        const v=mulM(mx,mulM(my,[Math.cos(a)*r,Math.sin(ring)*.15,Math.sin(a)*r]));
+        const p=project(v);
+        a===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);
+      }
+      ctx.stroke();
+    }
+
+    const hasActive=activeQ>=0;
+
+    // beams (drawn before nodes, under them)
+    if(hasActive){
+      retrievedIdxs.forEach((fi,bi)=>{
+        beamProgress[bi]=Math.min(1,beamProgress[bi]+.035);
+        const p=pts[fi]; const f=FILINGS[fi];
+        const prog=beamProgress[bi];
+        const midx=(qProj.x+p.x)/2+Math.sin(t*2+bi)*10;
+        const midy=(qProj.y+p.y)/2-14;
+        // curve up to current progress
+        ctx.beginPath();
+        ctx.moveTo(qProj.x,qProj.y);
+        const steps=24;
+        for(let s=1;s<=steps*prog;s++){
+          const tt=s/steps;
+          const bx=(1-tt)*(1-tt)*qProj.x+2*(1-tt)*tt*midx+tt*tt*p.x;
+          const byY=(1-tt)*(1-tt)*qProj.y+2*(1-tt)*tt*midy+tt*tt*p.y;
+          ctx.lineTo(bx,byY);
+        }
+        ctx.strokeStyle=f.col+'aa';
+        ctx.lineWidth=2.2-bi*.25;
+        ctx.shadowBlur=8; ctx.shadowColor=f.col;
+        ctx.stroke();
+        ctx.shadowBlur=0;
+        // traveling packet
+        if(prog>=1){
+          const tt=(t*.6+bi*.2)%1;
+          const bx=(1-tt)*(1-tt)*qProj.x+2*(1-tt)*tt*midx+tt*tt*p.x;
+          const byY=(1-tt)*(1-tt)*qProj.y+2*(1-tt)*tt*midy+tt*tt*p.y;
+          ctx.beginPath(); ctx.arc(bx,byY,2.6,0,Math.PI*2);
+          ctx.fillStyle='#ffffff'; ctx.shadowBlur=10; ctx.shadowColor=f.col;
+          ctx.fill(); ctx.shadowBlur=0;
+        }
+      });
+    }
+
+    // nodes, painter's algorithm (back to front)
+    const order=pts.map((p,i)=>i).sort((a,b)=>pts[a].z-pts[b].z);
+    order.forEach(i=>{
+      const f=FILINGS[i], p=pts[i];
+      const isRet=hasActive&&retrievedIdxs.includes(i);
+      const dim=hasActive&&!isRet;
+      const baseR=2.4+(f.score/100)*4.2;
+      const r=baseR*(p.persp/ (Math.min(W,H)*.42*1.6/3.2));
+      let alpha=dim?.14:.92;
+      if(isRet) alpha=1;
+      ctx.globalAlpha=alpha;
+      ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(r,1.8),0,Math.PI*2);
+      ctx.fillStyle=f.col;
+      if(isRet||hoverIdx===i){ ctx.shadowBlur=12; ctx.shadowColor=f.col; }
+      ctx.fill(); ctx.shadowBlur=0;
+      if(isRet){
+        ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=1.1; ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+    });
+
+    // query node (gold core)
+    ctx.beginPath(); ctx.arc(qProj.x,qProj.y,6+Math.sin(t*3)*1.2,0,Math.PI*2);
+    const qg=ctx.createRadialGradient(qProj.x,qProj.y,0,qProj.x,qProj.y,9);
+    qg.addColorStop(0,'#fff6d8'); qg.addColorStop(1,'#f0abfc');
+    ctx.fillStyle=qg; ctx.shadowBlur=16; ctx.shadowColor='#fbbf24';
+    ctx.fill(); ctx.shadowBlur=0;
+    ctx.font=`600 10px ${FONT}`; ctx.fillStyle='rgba(255,240,200,.9)'; ctx.textAlign='center';
+    ctx.fillText(hasActive?'query':'', qProj.x, qProj.y-13);
+
+    // hover tooltip
+    if(hoverIdx>=0){
+      const f=FILINGS[hoverIdx], p=pts[hoverIdx];
+      const tw=118,th=40,tx=Math.min(p.x+10,W-tw-4),ty=Math.max(p.y-th-8,4);
+      ctx.fillStyle='rgba(2,14,40,.93)'; ctx.strokeStyle=f.col; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.roundRect(tx,ty,tw,th,7); ctx.fill(); ctx.stroke();
+      ctx.font=`600 11px ${FONT}`; ctx.fillStyle='#fff'; ctx.textAlign='left';
+      ctx.fillText(`${f.company} ${f.year}`,tx+8,ty+16);
+      ctx.font=`500 10px ${FONT}`; ctx.fillStyle=f.col;
+      ctx.fillText(`Risk score: ${f.score.toFixed(1)}`,tx+8,ty+30);
+    }
+
+    ctx.font=`500 10px ${FONT}`; ctx.fillStyle='rgba(140,200,255,.55)'; ctx.textAlign='center';
+    ctx.fillText('drag to rotate',W/2,H-8);
+
+    requestAnimationFrame(draw);
+  }
+
+  cvs.addEventListener('mousedown',e=>{dragging=true;autoRot=false;lx=e.clientX;ly=e.clientY;cvs.style.cursor='grabbing';});
+  window.addEventListener('mouseup',()=>{dragging=false;cvs.style.cursor='grab';setTimeout(()=>autoRot=true,2200);});
+  window.addEventListener('mousemove',e=>{
+    if(dragging){
+      rotY+=(e.clientX-lx)*.008; rotX+=(e.clientY-ly)*.008;
+      lx=e.clientX; ly=e.clientY;
+    }
+    const rect=cvs.getBoundingClientRect();
+    const mxp=e.clientX-rect.left,myp=e.clientY-rect.top;
+    if(mxp>=0&&mxp<=W&&myp>=0&&myp<=H){
+      // recompute last-drawn point screen coords cheaply via stored FILINGS proj cache
+      hoverIdx=idxNear(mxp,myp,lastPts||[]);
+    } else hoverIdx=-1;
+  });
+  cvs.addEventListener('touchstart',e=>{autoRot=false;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
+  cvs.addEventListener('touchmove',e=>{
+    rotY+=(e.touches[0].clientX-lx)*.008; rotX+=(e.touches[0].clientY-ly)*.008;
+    lx=e.touches[0].clientX; ly=e.touches[0].clientY; e.preventDefault();
+  },{passive:false});
+
+  requestAnimationFrame(draw);
+
+  // auto-select first question after a short delay so the galaxy isn't inert
+  setTimeout(()=>selectQuestion(0),1400);
 })();
 
 /* ── KPI CARD INTERACTIONS ── */
