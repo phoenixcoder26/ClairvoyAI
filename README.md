@@ -251,6 +251,22 @@ Advanced NLP outputs include:
 
 This phase helps evaluate whether filings with similar risk levels also share similar disclosure-language patterns. Because the MVP contains only 25 filings, the advanced NLP outputs are interpreted as exploratory diagnostics rather than production-grade semantic modeling.
 
+## RAG-Style Analyst Assistant
+
+Phase 4C adds a lightweight RAG-style analyst assistant to ClairvoyAI.
+
+The assistant converts filing-level risk scores, top risk drivers, evidence snippets, analyst explanations, and recommended actions into searchable text records. A TF-IDF retriever ranks the most relevant company-year filings for a user question using cosine similarity. The system then produces evidence-backed analyst responses grounded in the retrieved filing records.
+
+Example questions supported by the prototype include:
+
+- Why is Boeing classified as High risk?
+- What evidence supports Tesla’s Elevated risk level?
+- Which companies show the strongest supply chain risk?
+- Compare Amazon and Pfizer risk disclosures.
+- What are the main regulatory and litigation risks across filings?
+
+This first version is described as a RAG-style prototype because it uses processed filing evidence and TF-IDF retrieval. A future version can connect the retrieved evidence to an LLM for full retrieval-augmented generation.
+
 ## Key Findings
 
 ### 1. Boeing exhibited the highest disclosure-risk intensity
