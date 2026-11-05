@@ -1,1047 +1,435 @@
-
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ClairvoyAI — Risk Intelligence</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',-apple-system,sans-serif}
-.wrap{position:relative;overflow:hidden;border-radius:16px;min-height:900px;}
-#bgCanvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;}
-.content{position:relative;z-index:2;padding:20px;}
-.hdr{text-align:center;margin-bottom:24px;padding-top:10px;}
-.hdr-logo-wrap{position:relative;display:inline-block;margin-bottom:8px;}
-.hdr-logo{font-size:52px;font-weight:700;letter-spacing:-1.5px;line-height:1;
-  background:linear-gradient(135deg,#ffffff 0%,#a8d8ff 30%,#5bc8ff 55%,#a78bfa 80%,#7dd3fc 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  filter:drop-shadow(0 0 32px rgba(91,200,255,.55)) drop-shadow(0 0 8px rgba(167,139,250,.4));
-  position:relative;z-index:1;}
-.hdr-logo-ai{
-  background:linear-gradient(135deg,#5bc8ff 0%,#a78bfa 60%,#f0abfc 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.hdr-logo-glow{position:absolute;inset:-12px;background:radial-gradient(ellipse at center,rgba(91,200,255,.18) 0%,rgba(167,139,250,.1) 50%,transparent 75%);filter:blur(8px);z-index:0;pointer-events:none;}
-.hdr-tagline-wrap{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:2px;margin-bottom:6px;}
-.hdr-line{flex:1;max-width:80px;height:1px;background:linear-gradient(90deg,transparent,rgba(91,200,255,.5));}
-.hdr-line.r{background:linear-gradient(90deg,rgba(91,200,255,.5),transparent);}
-.hdr-tag{font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:#5bc8ff;opacity:.85;}
-.hdr-sub{font-size:12px;color:#7bbfd8;margin-top:4px;letter-spacing:.04em;}
-.hdr-underline{width:120px;height:1.5px;margin:10px auto 0;background:linear-gradient(90deg,transparent,#5bc8ff 40%,#a78bfa 60%,transparent);border-radius:2px;}
-@keyframes hdr-shimmer{0%,100%{opacity:.7}50%{opacity:1}}
-.hdr-logo{animation:hdr-shimmer 4s ease-in-out infinite;}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
-.kpi{
-  background:linear-gradient(145deg,rgba(22,65,115,.78) 0%,rgba(8,30,75,.70) 100%);
-  border:1px solid rgba(140,210,255,.32);border-radius:12px;padding:13px 14px;
-  backdrop-filter:blur(10px);
-  box-shadow:0 3px 16px rgba(0,0,0,.28),inset 0 1px 0 rgba(180,230,255,.12);
-  cursor:pointer;position:relative;overflow:hidden;
-  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease;
-}
-.kpi::before{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(91,200,255,.08) 0%,rgba(167,139,250,.06) 100%);
-  opacity:0;transition:opacity .18s ease;border-radius:12px;
-}
-.kpi:hover{
-  transform:translateY(-3px) scale(1.02);
-  box-shadow:0 8px 28px rgba(0,0,0,.38),0 0 18px rgba(91,200,255,.18),inset 0 1px 0 rgba(180,230,255,.2);
-  border-color:rgba(140,210,255,.65);
-}
-.kpi:hover::before{opacity:1;}
-.kpi.active{
-  transform:translateY(-2px) scale(1.025);
-  background:linear-gradient(145deg,rgba(30,80,140,.88) 0%,rgba(15,48,100,.82) 100%);
-  border-color:rgba(91,200,255,.8);
-  box-shadow:0 0 0 2px rgba(91,200,255,.25),0 8px 28px rgba(0,0,0,.4),inset 0 1px 0 rgba(180,230,255,.22);
-}
-.kpi-ripple{
-  position:absolute;border-radius:50%;
-  background:rgba(91,200,255,.18);
-  transform:scale(0);animation:kpi-ripple .55s ease-out forwards;
-  pointer-events:none;
-}
-@keyframes kpi-ripple{to{transform:scale(4);opacity:0;}}
-.kpi-l{font-size:11px;font-weight:500;color:#7bbfd8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;transition:color .18s;}
-.kpi:hover .kpi-l,.kpi.active .kpi-l{color:#a8d8f8;}
-.kpi-v{font-size:24px;font-weight:600;color:#f0f8ff;line-height:1;transition:transform .18s;}
-.kpi:hover .kpi-v{transform:scale(1.06);}
-.kpi-s{font-size:11px;color:#7bbfd8;margin-top:3px;transition:color .18s;}
-.kpi:hover .kpi-s{color:#9dcfee;}
-.kpi-bar{height:2px;border-radius:2px;margin-top:8px;background:rgba(255,255,255,.08);overflow:hidden;}
-.kpi-bar-fill{height:100%;border-radius:2px;width:0;transition:width .7s cubic-bezier(.4,0,.2,1);}
-.row2{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px;}
-.panel{background:linear-gradient(145deg,rgba(20,60,110,.78) 0%,rgba(10,38,85,.68) 100%);border:1px solid rgba(140,210,255,.38);border-radius:14px;padding:16px;backdrop-filter:blur(14px);box-shadow:0 4px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(180,230,255,.14);}
-.panel-title{font-size:13px;font-weight:600;color:#c8e8ff;margin-bottom:12px;letter-spacing:.03em;display:flex;align-items:center;gap:7px;}
-.panel-title i{font-size:15px;color:#5bc8ff;}
-.legend-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
-.leg{display:flex;align-items:center;gap:5px;font-size:12px;color:#a8d4f0;}
-.leg-sq{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
-#gaussCanvas{width:100%;display:block;border-radius:8px;}
-#cubeWrap{display:flex;justify-content:center;align-items:center;height:280px;}
-#cubeCanvas{border-radius:8px;cursor:grab;}
-.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-.mini-panel{background:linear-gradient(145deg,rgba(20,60,110,.75) 0%,rgba(10,38,85,.65) 100%);border:1px solid rgba(140,210,255,.32);border-radius:12px;padding:14px;backdrop-filter:blur(12px);box-shadow:0 4px 20px rgba(0,0,0,.28),inset 0 1px 0 rgba(180,230,255,.11);}
-.badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
-.pulse{animation:pulse 2s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
-/* animated canvas panels */
-#scorecardCanvas{width:100%;display:block;}
-#driversCanvas{width:100%;display:block;}
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClairvoyAI | Risk Intelligence Platform</title>
+<meta name="description" content="Risk scores for 25 SEC 10-K filings, 2021 to 2025, with a retrieval assistant that answers from the filings.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--ink:#0e2a47;--ink2:#34506b;--ink3:#5f7a93;--glass:rgba(255,255,255,.8);--glass2:rgba(255,255,255,.55);--line:rgba(14,42,71,.12);--teal:#0e8fa8;--navy:#0e2a47;
+--serif:'Fraunces','Georgia',serif;--sans:'Figtree','Segoe UI',system-ui,sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+ background:linear-gradient(#eef8fd 0%,#d4ecf6 40%,#a8dbe8 58%,#5fb1c6 78%,#2c7e98 100%);background-attachment:fixed}
+#scene{position:fixed;inset:0;width:100%;height:100%;z-index:-1;display:block}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+/* hero */
+.hero{padding:64px 0 30px;text-align:left}
+.brand{font-family:var(--serif);font-weight:600;font-size:clamp(56px,10vw,128px);line-height:.92;letter-spacing:-.035em;color:var(--navy)}
+.brand span{font-style:italic;font-weight:400;color:#0b7a93}
+.tagline{margin-top:18px;font-family:var(--serif);font-size:clamp(22px,3.2vw,36px);font-weight:400;max-width:24ch;line-height:1.15;color:var(--navy)}
+.lede{margin-top:14px;max-width:60ch;font-size:17px;color:var(--ink2)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
+.kpi{position:relative;overflow:hidden;background:var(--glass);border:1px solid rgba(255,255,255,.85);border-radius:20px;padding:16px 18px;box-shadow:0 12px 36px rgba(14,42,71,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);cursor:pointer;text-align:left;font:inherit;color:inherit;transition:transform .2s}
+.kpi:hover{transform:translateY(-3px)}
+.kpi .l{font-size:13px;font-weight:700;color:var(--ink3)}
+.kpi .v{font-family:var(--serif);font-size:46px;font-weight:600;line-height:1.05;letter-spacing:-.02em}
+.kpi .s{font-size:13.5px;color:var(--ink2)}
+.kpi .bar{height:6px;border-radius:999px;background:rgba(14,42,71,.1);margin-top:10px;overflow:hidden}
+.kpi .bar i{display:block;height:100%;width:0;border-radius:999px;transition:width 1.4s cubic-bezier(.2,.8,.2,1)}
+.kpi.on{box-shadow:0 0 0 3px var(--navy),0 12px 36px rgba(14,42,71,.2)}
+/* sections */
+.sec{margin-top:34px}
+.sh{margin-bottom:12px;max-width:760px}
+.sh h2{font-family:var(--serif);font-weight:500;font-size:clamp(28px,4vw,42px);line-height:1.05;letter-spacing:-.02em;color:var(--navy)}
+.sh p{margin-top:6px;font-size:16px;color:var(--ink2)}
+.panel{background:var(--glass);border:1px solid rgba(255,255,255,.85);border-radius:24px;padding:20px 22px;box-shadow:0 14px 40px rgba(14,42,71,.14);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);min-width:0}
+.panel h3{font-family:var(--serif);font-size:22px;font-weight:500;letter-spacing:-.01em}
+.panel .cap{font-size:14px;color:var(--ink3);margin-top:2px;max-width:62ch}
+.g2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px}
+.g2b{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.g3{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.9fr);gap:18px}
+.rag{align-items:start;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px}
+canvas,svg{display:block;max-width:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px;margin:8px 0 2px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:4px;margin-right:6px;vertical-align:-1px}
+.note{font-size:14.5px;color:var(--ink2);margin-top:8px;max-width:70ch}
+.note b{color:var(--ink)}
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--navy);color:#fff;font-size:13px;padding:7px 11px;border-radius:10px;opacity:0;transition:opacity .12s;white-space:nowrap;transform:translate(-50%,-120%)}
+/* filing grid */
+.grid{display:grid;grid-template-columns:90px repeat(5,minmax(0,1fr));gap:8px;margin-top:14px;align-items:center}
+.grid .h{font-size:13px;font-weight:700;color:var(--ink3);text-align:center}
+.grid .n{font-weight:700;font-size:14.5px}
+.tile{border-radius:12px;height:50px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15.5px;color:#fff;transform:scale(0);transition:transform .45s cubic-bezier(.2,1.4,.4,1);cursor:default;font-variant-numeric:tabular-nums}
+.tile.in{transform:scale(1)}
+.tile:hover{outline:3px solid var(--navy);outline-offset:1px}
+.lvs{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.lvs span{font-size:13.5px;font-weight:700;border-radius:999px;padding:4px 12px;color:#fff}
+/* rag */
+#galaxyWrap{position:relative;margin-top:10px;border-radius:18px;overflow:hidden;background:radial-gradient(circle at 50% 45%,#ffffff 0%,#e3f3fa 55%,#c4e4f0 100%);border:1px solid var(--line)}
+#galaxy{width:100%;height:420px;cursor:grab;touch-action:none}
+#galaxy:active{cursor:grabbing}
+.pipe{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:12px;font-size:13px}
+.pipe b{font-weight:600;border:1.5px solid var(--line);border-radius:999px;padding:3px 9px;font-size:12.5px;color:var(--ink3);transition:all .25s}
+.pipe b.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.pipe em{font-style:normal;color:var(--ink3)}
+.qs{display:flex;flex-direction:column;gap:7px;margin:10px 0}
+.q{font:inherit;font-size:14px;text-align:left;border:1.5px solid var(--line);background:var(--glass2);border-radius:14px;padding:8px 13px;cursor:pointer;color:var(--ink)}
+.q:hover{border-color:var(--teal)}
+.q[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.lbl{font-size:13px;font-weight:800;color:var(--teal);margin:12px 0 6px}
+.ev{display:grid;grid-template-columns:92px 1fr 48px;gap:8px;align-items:center;font-size:13.5px;margin:4px 0}
+.ev .t{height:12px;border-radius:999px;background:rgba(14,42,71,.08);overflow:hidden}
+.ev .t i{display:block;height:100%;width:0;border-radius:999px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.ev span:last-child{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink3)}
+.ans{font-size:14.5px;line-height:1.55;background:var(--glass2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-height:150px}
+.caret{display:inline-block;width:7px;height:14px;background:var(--teal);vertical-align:-2px;margin-left:2px;animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:0}}
+footer{margin-top:44px;padding:36px 0 56px;background:linear-gradient(transparent,rgba(9,38,62,.7));text-align:center;color:#eaf6fd;font-size:14px}
+footer a{display:inline-flex;align-items:center;gap:8px;color:#fff;border:1.5px solid rgba(255,255,255,.7);border-radius:999px;padding:8px 18px;text-decoration:none;font-weight:700}
+footer a:hover{background:rgba(255,255,255,.18)}
+footer p{margin-top:10px}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.g2,.g2b,.g3,.rag{grid-template-columns:1fr}.hero{padding-top:36px}.grid{grid-template-columns:62px repeat(5,minmax(0,1fr));gap:5px}.tile{height:42px;font-size:13px}.kpi .v{font-size:38px}.panel{padding:16px 14px;border-radius:20px}.sc{overflow-x:auto}.sc svg{min-width:760px}.sc #tide svg{min-width:680px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@keyframes bob{50%{transform:translateY(7px)}}
+.hero{padding:26px 0 8px}
+.brand{font-size:clamp(40px,6vw,76px)}
+.tagline{margin-top:8px;font-size:clamp(18px,2.2vw,26px);max-width:none}
+.lede{display:none}
+.kpis{margin-top:16px;gap:12px}
+.kpi{padding:11px 15px;border-radius:16px}
+.kpi .v{font-size:34px}
+.kpi .bar{margin-top:6px}
+.sec{margin-top:26px}
+</style></head><body>
+<canvas id="scene" aria-hidden="true"></canvas>
+<div class="tip" id="tip" role="status"></div>
+<main class="wrap">
+<header class="hero">
+  <h1 class="brand">Clairvoy<span>AI</span></h1>
+  <p class="tagline">The score is the tip. The real risk sits below the waterline.</p>
+  <p class="lede">25 SEC 10-K filings from 5 companies, 2021–2025. Each Item 1A risk section is read, scored from 0 to 100, and placed on a level: Low, Moderate, Elevated or High.</p>
+  <div class="kpis" id="kpis"></div>
+</header>
 
-/* ── RAG RETRIEVAL EXPLORER ── */
-.rag-row{display:grid;grid-template-columns:1.7fr 1fr;gap:14px;margin-bottom:14px;}
-.rag-sub{font-size:11px;color:#7bbfd8;margin:-8px 0 12px;letter-spacing:.02em;}
-#ragGalaxyWrap{position:relative;width:100%;height:480px;border-radius:10px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,rgba(30,50,110,.5) 0%,rgba(6,12,32,.9) 65%,rgba(2,6,18,1) 100%);}
-#ragStarsCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
-#ragGalaxyCanvas{position:relative;width:100%;height:100%;display:block;border-radius:10px;cursor:grab;}
-.rag-questions{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
-.rag-chip{
-  font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:#a8d4f0;
-  background:linear-gradient(145deg,rgba(20,60,110,.6),rgba(10,38,85,.55));
-  border:1px solid rgba(140,210,255,.28);border-radius:20px;padding:6px 12px;
-  cursor:pointer;transition:all .18s ease;letter-spacing:.01em;text-align:left;line-height:1.3;
-}
-.rag-chip:hover{border-color:rgba(140,210,255,.6);color:#e8f4ff;transform:translateY(-1px);}
-.rag-chip.active{
-  background:linear-gradient(145deg,rgba(91,200,255,.28),rgba(167,139,250,.22));
-  border-color:#5bc8ff;color:#fff;
-  box-shadow:0 0 14px rgba(91,200,255,.3),inset 0 1px 0 rgba(255,255,255,.15);
-}
-.rag-section-lbl{font-size:10px;font-weight:700;color:#5bc8ff;text-transform:uppercase;letter-spacing:.1em;margin:4px 0 8px;}
-.rag-ev-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
-.rag-ev-name{font-size:11px;font-weight:600;color:#dcefff;width:76px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.rag-ev-track{flex:1;height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;position:relative;}
-.rag-ev-fill{height:100%;width:0;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1);}
-.rag-ev-val{font-size:10px;font-weight:700;color:#7bbfd8;width:36px;text-align:right;flex-shrink:0;}
-.rag-answer{
-  margin-top:10px;background:rgba(4,20,50,.55);border:1px solid rgba(140,210,255,.22);
-  border-radius:10px;padding:11px 12px;font-size:12px;line-height:1.55;color:#cfe6fa;
-  min-height:92px;box-shadow:inset 0 1px 0 rgba(180,230,255,.08);
-}
-.rag-cursor{display:inline-block;width:6px;height:12px;background:#5bc8ff;margin-left:1px;vertical-align:middle;animation:pulse 1s step-start infinite;}
-.rag-pipeline{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;flex-wrap:wrap;}
-.rag-pipe-step{font-size:10px;font-weight:600;color:#7bbfd8;background:rgba(20,60,110,.5);border:1px solid rgba(140,210,255,.25);border-radius:14px;padding:4px 10px;letter-spacing:.02em;}
-.rag-pipe-arrow{color:#3d6a8c;font-size:12px;}
-</style>
-</head>
-<body>
-<div class="wrap">
-<canvas id="bgCanvas"></canvas>
+<section class="sec" aria-labelledby="h-tide">
+  <div class="sh"><h2 id="h-tide">Five years of tide</h2><p>Each wave is one company. The higher the wave, the higher the risk score that year. Hover a wave to read a score.</p></div>
+  <div class="panel sc"><div id="tide"></div><div class="legend" id="tideLegend"></div></div>
+</section>
 
-<div class="content">
-<div class="hdr">
-  <div class="hdr-logo-wrap">
-    <div class="hdr-logo-glow"></div>
-    <div class="hdr-logo">Clairvoy<span class="hdr-logo-ai">AI</span></div>
-  </div>
-  <div class="hdr-tagline-wrap">
-    <div class="hdr-line"></div>
-    <div class="hdr-tag">Risk Intelligence Platform</div>
-    <div class="hdr-line r"></div>
-  </div>
-  <div class="hdr-sub">Live animated risk analysis · 25 SEC 10-K filings · Item 1A · 2021–2025</div>
-  <div class="hdr-underline"></div>
-</div>
-
-<div class="kpis">
-  <div class="kpi" data-pct="25" data-color="#5bc8ff" onclick="kpiClick(this)" title="25 total filings across 5 companies">
-    <div class="kpi-l">Filings analyzed</div>
-    <div class="kpi-v">25</div>
-    <div class="kpi-s">5 companies · 5 years</div>
-    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:linear-gradient(90deg,#5bc8ff,#a78bfa);"></div></div>
-  </div>
-  <div class="kpi" data-pct="52.3" data-color="#a78bfa" onclick="kpiClick(this)" title="Average risk score across all filings">
-    <div class="kpi-l">Portfolio avg score</div>
-    <div class="kpi-v" id="kAvg">52.3</div>
-    <div class="kpi-s">out of 100</div>
-    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:linear-gradient(90deg,#a78bfa,#f0abfc);"></div></div>
-  </div>
-  <div class="kpi" data-pct="20" data-color="#ff6b6b" onclick="kpiClick(this)" title="5 out of 25 filings rated high risk">
-    <div class="kpi-l">High-risk filings</div>
-    <div class="kpi-v" style="color:#ff6b6b;">5</div>
-    <div class="kpi-s">20% of portfolio</div>
-    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:linear-gradient(90deg,#ff6b6b,#f97316);"></div></div>
-  </div>
-  <div class="kpi" data-pct="100" data-color="#ff6b6b" onclick="kpiClick(this)" title="Boeing 2021 — highest risk filing in dataset">
-    <div class="kpi-l">Peak risk score</div>
-    <div class="kpi-v" style="color:#ff6b6b;">100.0</div>
-    <div class="kpi-s">Boeing 2021</div>
-    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:linear-gradient(90deg,#ef4444,#ff6b6b);"></div></div>
-  </div>
-</div>
-
-<div class="row2">
+<section class="sec g2" aria-label="Score distribution and 3D matrix">
   <div class="panel">
-    <div class="panel-title"><i class="ti ti-wave-square" aria-hidden="true"></i>Live risk score distribution — animated Gaussian peaks</div>
-    <div class="legend-row">
-      <div class="leg"><div class="leg-sq" style="background:#5bc8ff;"></div>Boeing</div>
-      <div class="leg"><div class="leg-sq" style="background:#a78bfa;"></div>Tesla</div>
-      <div class="leg"><div class="leg-sq" style="background:#34d399;"></div>Amazon</div>
-      <div class="leg"><div class="leg-sq" style="background:#fb7185;"></div>Pfizer</div>
-      <div class="leg"><div class="leg-sq" style="background:#fbbf24;"></div>Airbnb</div>
-    </div>
-    <div style="position:relative;width:100%;height:240px;">
-      <canvas id="gaussCanvas" role="img" aria-label="Animated Gaussian bell curve chart showing SEC filing risk score distributions"></canvas>
-    </div>
+    <h3>Where the 25 scores land</h3>
+    <p class="cap">Each dot is one filing. The curve shows where scores bunch up: a calm low end, and a second crowd of Boeing and Tesla near the top.</p>
+    <canvas id="dist" height="270" aria-label="Distribution of the 25 filing risk scores"></canvas>
   </div>
+  <div class="panel" style="text-align:center">
+    <h3>3D risk matrix</h3>
+    <p class="cap" style="margin:2px auto 0">Drag to rotate. Each face is one risk level.</p>
+    <canvas id="cube" width="300" height="300" aria-label="Rotating cube of company risk levels" style="margin:6px auto 0;cursor:grab;touch-action:none"></canvas>
+  </div>
+</section>
 
+<section class="sec" aria-labelledby="h-ice">
+  <div class="sh"><h2 id="h-ice">Icebergs, one per company</h2><p>The tip above the water is the average risk score. What lies under it is the filing text the score was read from.</p></div>
+  <div class="panel sc"><div id="icebergs"></div></div>
+</section>
+
+<section class="sec g3" aria-label="Filing grid and drivers">
   <div class="panel">
-    <div class="panel-title"><i class="ti ti-cube" aria-hidden="true"></i>3D risk matrix — drag to rotate</div>
-    <div id="cubeWrap">
-      <canvas id="cubeCanvas" width="280" height="280" role="img" aria-label="Interactive 3D risk matrix cube"></canvas>
-    </div>
+    <h3>All 25 filings</h3>
+    <p class="cap">Rows are companies, columns are years. Colour shows the risk level.</p>
+    <div class="grid" id="grid"></div>
+    <div class="lvs" id="lvs"></div>
   </div>
-</div>
-
-<div class="row3">
-  <div class="mini-panel">
-    <div style="font-size:12px;font-weight:600;color:#c8e8ff;margin-bottom:10px;">Company scorecard</div>
-    <canvas id="scorecardCanvas" height="200" aria-label="Animated company scorecard bars"></canvas>
-  </div>
-  <div class="mini-panel">
-    <div style="font-size:12px;font-weight:600;color:#c8e8ff;margin-bottom:10px;">Risk level distribution</div>
-    <div style="position:relative;width:100%;height:160px;">
-      <canvas id="donutC" role="img" aria-label="Donut chart: Low 10 filings, Moderate 5, Elevated 5, High 5"></canvas>
-    </div>
-  </div>
-  <div class="mini-panel">
-    <div style="font-size:12px;font-weight:600;color:#c8e8ff;margin-bottom:10px;">Top risk drivers</div>
-    <canvas id="driversCanvas" height="160" aria-label="Animated risk drivers bar chart"></canvas>
-  </div>
-</div>
-
-<div class="rag-row">
   <div class="panel">
-    <div class="panel-title"><i class="ti ti-atom-2" aria-hidden="true"></i>RAG retrieval galaxy — TF-IDF evidence space</div>
-    <div class="rag-sub">25 filings clustered by company · pick a question to watch retrieval happen</div>
-    <div id="ragGalaxyWrap">
-      <canvas id="ragStarsCanvas"></canvas>
-      <canvas id="ragGalaxyCanvas" role="img" aria-label="3D scatter of filings with animated retrieval beams from a query node to the top matching filings"></canvas>
+    <h3>Top risk drivers</h3>
+    <p class="cap">Weight of each theme in the disclosures. Hover a spoke.</p>
+    <canvas id="compass" height="330" aria-label="Radial chart of top risk drivers"></canvas>
+  </div>
+</section>
+
+<section class="sec" aria-labelledby="h-rag">
+  <div class="sh"><h2 id="h-rag">Ask the filings</h2><p>Pick a question. The assistant finds the closest filings by TF-IDF similarity and answers only from them.</p></div>
+  <div class="rag">
+    <div class="panel">
+      <h3>Retrieval galaxy</h3>
+      <p class="cap">Each bubble is a filing, sized by risk score. Drag to rotate. The gold core is your question.</p>
+      <div id="galaxyWrap"><canvas id="galaxy" aria-label="3D map of the 25 filings"></canvas></div>
+      <div class="pipe" id="pipe"><b>Question</b><em>›</em><b>TF-IDF vectors</b><em>›</em><b>Cosine similarity</b><em>›</em><b>Top 5 filings</b><em>›</em><b>Grounded answer</b></div>
     </div>
-    <div class="rag-pipeline">
-      <div class="rag-pipe-step">Question</div><div class="rag-pipe-arrow">→</div>
-      <div class="rag-pipe-step">TF-IDF vectorize</div><div class="rag-pipe-arrow">→</div>
-      <div class="rag-pipe-step">Cosine similarity</div><div class="rag-pipe-arrow">→</div>
-      <div class="rag-pipe-step">Top-k filings</div><div class="rag-pipe-arrow">→</div>
-      <div class="rag-pipe-step">Grounded answer</div>
+    <div class="panel">
+      <h3>Analyst assistant</h3>
+      <div class="qs" id="qs"></div>
+      <div class="lbl">Closest filings (cosine similarity)</div>
+      <div id="ev"></div>
+      <div class="lbl">Answer from those filings</div>
+      <div class="ans" id="ans" aria-live="polite">Pick a question to start.</div>
     </div>
   </div>
+</section>
+</main>
+<footer>
+  <a href="https://github.com/phoenixcoder26/ClairvoyAI" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577v-2.165c-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.085 1.84 1.237 1.84 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.605-2.665-.3-5.467-1.332-5.467-5.93 0-1.31.468-2.38 1.235-3.22-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.3 1.23a11.5 11.5 0 0 1 3.003-.404c1.02.005 2.047.138 3.003.404 2.29-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.233 1.91 1.233 3.22 0 4.61-2.807 5.625-5.479 5.92.43.372.823 1.102.823 2.222v3.293c0 .322.218.694.825.576C20.565 21.796 24 17.298 24 12c0-6.63-5.37-12-12-12z"/></svg>View on GitHub</a>
+  <p>ClairvoyAI © 2026</p>
+  <p>Author: <b>Farzana Khan Moutushi</b></p>
+</footer>
+<script>(function(){
+'use strict';
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+const el=(n,a,p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
+const COS=[
+ {name:'Boeing',col:'#1f5f99',lv:'High',az:0},
+ {name:'Tesla',col:'#7a5cc7',lv:'Elevated',az:72},
+ {name:'Amazon',col:'#0e9f8e',lv:'Moderate',az:144},
+ {name:'Pfizer',col:'#d9577a',lv:'Low',az:216},
+ {name:'Airbnb',col:'#d99a1c',lv:'Low',az:288}];
+const LV={High:'#d64545',Elevated:'#e8792b',Moderate:'#e3b021',Low:'#2a9d78'};
+const LVTXT={High:'#fff',Elevated:'#fff',Moderate:'#0e2a47',Low:'#fff'};
+const SCORES={Boeing:[100.00,87.15,85.54,77.02,76.89],Tesla:[63.80,71.01,66.04,64.79,67.42],Amazon:[42.75,45.31,46.07,45.71,43.67],Pfizer:[12.50,13.80,14.70,15.90,16.60],Airbnb:[0.00,4.95,5.29,13.41,11.39]};
+const YEARS=[2021,2022,2023,2024,2025];
+const DRIVERS=[{name:'Revenue/Demand',val:36.9,col:'#1f5f99'},{name:'Regulatory',val:31.1,col:'#7a5cc7'},{name:'Supply Chain',val:22.5,col:'#0e9f8e'},{name:'Macroeconomic',val:8.9,col:'#d99a1c'},{name:'Debt/Credit',val:8.7,col:'#d9577a'}];
+const avg=a=>a.reduce((s,x)=>s+x,0)/a.length;
+COS.forEach(c=>{c.avg=avg(SCORES[c.name]);});
+const ALL=[];COS.forEach(c=>YEARS.forEach((y,i)=>ALL.push({co:c.name,year:y,col:c.col,lv:c.lv,score:SCORES[c.name][i],id:c.name+' '+y})));
+const PORT=avg(ALL.map(f=>f.score));
+const PEAK=ALL.reduce((a,b)=>b.score>a.score?b:a);
+const NHIGH=ALL.filter(f=>f.lv==='High').length;
+const dpr=()=>Math.min(2,window.devicePixelRatio||1);
+const tip=$('tip');
+function showTip(x,y,t){tip.textContent=t;tip.style.left=x+'px';tip.style.top=y+'px';tip.style.opacity=1;}
+function hideTip(){tip.style.opacity=0;}
+function onVisible(node,fn){if(!('IntersectionObserver' in window)){fn();return;}const io=new IntersectionObserver(es=>{if(es[0].isIntersecting){io.disconnect();fn();}},{threshold:.15});io.observe(node);}
+function tween(ms,fn,done){if(RM){fn(1);done&&done();return;}const t0=performance.now();(function s(n){const p=Math.min(1,(n-t0)/ms);fn(1-Math.pow(1-p,3));if(p<1)requestAnimationFrame(s);else done&&done();})(t0);}
+const vis=new Map();
+function track(node){vis.set(node,true);if('IntersectionObserver' in window){new IntersectionObserver(es=>vis.set(node,es[0].isIntersecting)).observe(node);}}
 
-  <div class="panel">
-    <div class="panel-title"><i class="ti ti-message-chatbot" aria-hidden="true"></i>Analyst assistant</div>
-    <div class="rag-questions" id="ragQuestions"></div>
-    <div class="rag-section-lbl">Retrieved evidence (cosine similarity)</div>
-    <div id="ragEvidence"></div>
-    <div class="rag-section-lbl" style="margin-top:12px;">Grounded response</div>
-    <div class="rag-answer" id="ragAnswer">Select a question above to run retrieval.</div>
-  </div>
-</div>
-
-<div style="
-  position:relative;z-index:2;
-  text-align:center;
-  padding:18px 20px 22px;
-  border-top:1px solid rgba(91,200,255,.15);
-  margin-top:4px;
-">
-  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;">
-    <div style="flex:1;max-width:120px;height:1px;background:linear-gradient(90deg,transparent,rgba(91,200,255,.3));"></div>
-    <a href="https://github.com/phoenixcoder26/ClairvoyAI" target="_blank" rel="noopener"
-       style="display:inline-flex;align-items:center;gap:7px;
-              background:linear-gradient(135deg,rgba(20,60,110,.8),rgba(10,38,85,.75));
-              border:1px solid rgba(140,210,255,.35);border-radius:20px;
-              padding:7px 16px;text-decoration:none;
-              color:#a8d8f8;font-size:12px;font-weight:600;letter-spacing:.04em;
-              transition:all .2s ease;font-family:'Inter',sans-serif;
-              box-shadow:0 2px 12px rgba(0,0,0,.3),inset 0 1px 0 rgba(180,230,255,.1);"
-       onmouseover="this.style.borderColor='rgba(91,200,255,.75)';this.style.color='#fff';this.style.boxShadow='0 4px 18px rgba(91,200,255,.25),inset 0 1px 0 rgba(180,230,255,.15)';"
-       onmouseout="this.style.borderColor='rgba(140,210,255,.35)';this.style.color='#a8d8f8';this.style.boxShadow='0 2px 12px rgba(0,0,0,.3),inset 0 1px 0 rgba(180,230,255,.1)';">
-      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577v-2.165c-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.085 1.84 1.237 1.84 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.605-2.665-.3-5.467-1.332-5.467-5.93 0-1.31.468-2.38 1.235-3.22-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.3 1.23a11.5 11.5 0 0 1 3.003-.404c1.02.005 2.047.138 3.003.404 2.29-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.233 1.91 1.233 3.22 0 4.61-2.807 5.625-5.479 5.92.43.372.823 1.102.823 2.222v3.293c0 .322.218.694.825.576C20.565 21.796 24 17.298 24 12c0-6.63-5.37-12-12-12z"/>
-      </svg>
-      View on GitHub
-    </a>
-    <div style="flex:1;max-width:120px;height:1px;background:linear-gradient(90deg,rgba(91,200,255,.3),transparent);"></div>
-  </div>
-  <div style="font-size:11px;color:#5a8aaa;font-family:'Inter',sans-serif;letter-spacing:.05em;margin-top:4px;">
-    <span style="color:#4a7a9a;">ClairvoyAI © 2026</span>
-  </div>
-  <div style="font-size:11px;color:#5a8aaa;font-family:'Inter',sans-serif;letter-spacing:.05em;margin-top:3px;">
-    Author &nbsp;·&nbsp; <span style="color:#7bbfd8;font-weight:600;">Farzana Khan Moutushi</span>
-  </div>
-</div>
-
-</div>
-</div>
-
-<script>
-const FONT="'Inter',sans-serif";
-
-/* ── ANIMATED ICEBERG BACKGROUND ── */
+/* ---------- scene: sea, waves, iceberg ---------- */
 (function(){
-  const cvs=document.getElementById('bgCanvas');
-  const ctx=cvs.getContext('2d');
-  let W,H,t=0;
-  const particles=[];
-  const bubbles=[];
-
-  function resize(){
-    W=cvs.width=cvs.offsetWidth;
-    H=cvs.height=cvs.offsetHeight;
-  }
-  resize();
-  window.addEventListener('resize',resize);
-
-  for(let i=0;i<60;i++){
-    particles.push({x:Math.random()*1200,y:Math.random()*900,r:Math.random()*1.5+.3,vx:(Math.random()-.5)*.15,vy:Math.random()*.1+.05,a:Math.random()*.6+.2});
-  }
-  for(let i=0;i<20;i++){
-    bubbles.push({x:Math.random()*1200,y:Math.random()*900+200,r:Math.random()*3+1,vy:-(Math.random()*.4+.1),a:Math.random()*.4+.1});
-  }
-
-  function drawBg(){
-    const grad=ctx.createLinearGradient(0,0,0,H);
-    grad.addColorStop(0,'#020e25');
-    grad.addColorStop(.35,'#031a4a');
-    grad.addColorStop(.6,'#042060');
-    grad.addColorStop(1,'#010810');
-    ctx.fillStyle=grad;
-    ctx.fillRect(0,0,W,H);
-
-    const aurora=ctx.createLinearGradient(0,0,W,H*.4);
-    aurora.addColorStop(0,'rgba(30,120,200,.06)');
-    aurora.addColorStop(.5,'rgba(80,200,255,.04)');
-    aurora.addColorStop(1,'rgba(100,80,220,.05)');
-    ctx.fillStyle=aurora;
-    ctx.fillRect(0,0,W,H*.5);
-  }
-
-  function drawIceberg(){
-    const cx=W*.72,cy=H*.18,sc=Math.min(W,H)*.35;
-    ctx.save();
-
-    ctx.beginPath();
-    ctx.moveTo(cx,cy-sc*.55);
-    ctx.lineTo(cx+sc*.28,cy-sc*.1);
-    ctx.lineTo(cx+sc*.38,cy+sc*.05);
-    ctx.lineTo(cx+sc*.15,cy+sc*.08);
-    ctx.lineTo(cx+sc*.45,cy+sc*.18);
-    ctx.lineTo(cx+sc*.18,cy+sc*.22);
-    ctx.lineTo(cx+sc*.35,cy+sc*.55);
-    ctx.lineTo(cx+sc*.08,cy+sc*.7);
-    ctx.lineTo(cx-sc*.05,cy+sc*.75);
-    ctx.lineTo(cx-sc*.22,cy+sc*.68);
-    ctx.lineTo(cx-sc*.38,cy+sc*.5);
-    ctx.lineTo(cx-sc*.2,cy+sc*.28);
-    ctx.lineTo(cx-sc*.42,cy+sc*.15);
-    ctx.lineTo(cx-sc*.3,cy+sc*.06);
-    ctx.lineTo(cx-sc*.35,cy-sc*.08);
-    ctx.closePath();
-
-    const ig=ctx.createLinearGradient(cx-sc*.5,cy-sc*.6,cx+sc*.5,cy+sc*.8);
-    ig.addColorStop(0,'rgba(180,230,255,.12)');
-    ig.addColorStop(.4,'rgba(100,180,255,.08)');
-    ig.addColorStop(1,'rgba(30,80,180,.04)');
-    ctx.fillStyle=ig;
-    ctx.fill();
-    ctx.strokeStyle='rgba(140,210,255,.18)';
-    ctx.lineWidth=.8;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(cx-sc*.05,cy+sc*.75);
-    ctx.lineTo(cx-sc*.22,cy+sc*.68);
-    ctx.lineTo(cx-sc*.38,cy+sc*.5);
-    ctx.lineTo(cx-sc*.35,cy+sc*.9);
-    ctx.lineTo(cx+sc*.2,cy+sc*.95);
-    ctx.lineTo(cx+sc*.08,cy+sc*.7);
-    ctx.closePath();
-    const ig2=ctx.createLinearGradient(cx,cy+sc*.6,cx,cy+sc);
-    ig2.addColorStop(0,'rgba(30,100,200,.07)');
-    ig2.addColorStop(1,'rgba(10,40,120,.03)');
-    ctx.fillStyle=ig2;
-    ctx.fill();
-
-    ctx.restore();
-  }
-
-  function drawWaterline(){
-    const wl=H*.32;
-    ctx.save();
-    for(let x=0;x<W;x+=3){
-      const wave=Math.sin(x*.012+t*.8)*3+Math.sin(x*.025-t*.5)*2;
-      const a=.06+Math.sin(x*.008+t)*.02;
-      ctx.fillStyle=`rgba(80,180,255,${a})`;
-      ctx.fillRect(x,wl+wave,3,1.2);
-    }
-    ctx.restore();
-  }
-
-  function drawParticles(){
-    particles.forEach(p=>{
-      p.x+=p.vx; p.y+=p.vy;
-      if(p.x<0)p.x=W; if(p.x>W)p.x=0;
-      if(p.y>H)p.y=0;
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle=`rgba(150,210,255,${p.a})`;
-      ctx.fill();
-    });
-    bubbles.forEach(b=>{
-      b.y+=b.vy;
-      if(b.y<-10)b.y=H+10;
-      ctx.beginPath();
-      ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
-      ctx.strokeStyle=`rgba(100,200,255,${b.a})`;
-      ctx.lineWidth=.5;
-      ctx.stroke();
-    });
-  }
-
-  function drawGridLines(){
-    ctx.save();
-    ctx.strokeStyle='rgba(80,140,220,.06)';
-    ctx.lineWidth=.5;
-    for(let x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-    for(let y=0;y<H;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-    ctx.restore();
-  }
-
-  function loop(){
-    t+=.008;
-    drawBg();
-    drawGridLines();
-    drawIceberg();
-    drawWaterline();
-    drawParticles();
-    requestAnimationFrame(loop);
-  }
-  loop();
+ const c=$('scene'),x=c.getContext('2d');let W,H,t=0;
+ const snow=Array.from({length:46},(_,i)=>({x:Math.random(),y:Math.random(),r:1+Math.random()*2.2,s:.02+Math.random()*.05,p:Math.random()*6}));
+ function rs(){W=c.width=innerWidth;H=c.height=innerHeight;}
+ rs();addEventListener('resize',rs);
+ function wave(y0,amp,len,sp,ph,fill){x.beginPath();x.moveTo(0,H);for(let i=0;i<=W;i+=8){x.lineTo(i,y0+Math.sin(i/len+t*sp+ph)*amp+Math.sin(i/(len*.43)+t*sp*1.7)*amp*.35);}x.lineTo(W,H);x.closePath();x.fillStyle=fill;x.fill();}
+ function frame(){
+  t+=.012;x.clearRect(0,0,W,H);
+  const wl=H*.8;
+  // iceberg (tip above water, mass below), right side, faint
+  const cx=W*.82,s=Math.min(W,H)/900;
+  x.save();x.globalAlpha=.9;
+  x.beginPath();x.moveTo(cx-120*s,wl);x.lineTo(cx-70*s,wl-120*s);x.lineTo(cx-30*s,wl-90*s);x.lineTo(cx+10*s,wl-190*s);x.lineTo(cx+70*s,wl-110*s);x.lineTo(cx+120*s,wl);x.closePath();
+  let g=x.createLinearGradient(0,wl-190*s,0,wl);g.addColorStop(0,'#ffffff');g.addColorStop(1,'#dff2f9');x.fillStyle=g;x.fill();
+  x.restore();
+  wave(wl,6,90,1,0,'rgba(120,196,216,.55)');
+  // submerged mass
+  x.beginPath();x.moveTo(cx-150*s,wl+4);x.lineTo(cx-200*s,wl+120*s);x.lineTo(cx-90*s,wl+230*s);x.lineTo(cx+60*s,wl+260*s);x.lineTo(cx+190*s,wl+140*s);x.lineTo(cx+150*s,wl+4);x.closePath();
+  g=x.createLinearGradient(0,wl,0,wl+260*s);g.addColorStop(0,'rgba(235,249,253,.55)');g.addColorStop(1,'rgba(235,249,253,.08)');x.fillStyle=g;x.fill();
+  wave(wl+10,7,130,.8,2,'rgba(70,160,186,.45)');
+  wave(wl+34,9,170,.6,4,'rgba(44,126,152,.55)');
+  snow.forEach(p=>{p.y+=p.s*.004;p.x+=Math.sin(t+p.p)*.0003;if(p.y>.8){p.y=-.02;}x.beginPath();x.arc(p.x*W,p.y*H,p.r,0,7);x.fillStyle='rgba(255,255,255,.75)';x.fill();});
+  if(!RM)requestAnimationFrame(frame);
+ }
+ frame();
 })();
 
-/* ── ANIMATED GAUSSIAN BELL CURVES ── */
+/* ---------- KPIs ---------- */
 (function(){
-  const cvs=document.getElementById('gaussCanvas');
-  const ctx=cvs.getContext('2d');
-  let W,H,t=0;
-
-  const companies=[
-    {name:'Boeing', peak:91.4, sigma:6, color:'#5bc8ff', phase:0},
-    {name:'Tesla',  peak:57.8, sigma:7, color:'#a78bfa', phase:.4},
-    {name:'Amazon', peak:36.9, sigma:6.5,color:'#34d399',phase:.8},
-    {name:'Pfizer', peak:14.7, sigma:5, color:'#fb7185', phase:1.2},
-    {name:'Airbnb', peak:3.1,  sigma:4, color:'#fbbf24', phase:1.6},
-  ];
-
-  function gauss(x,mu,sig){return Math.exp(-((x-mu)**2)/(2*sig*sig));}
-
-  function resize(){
-    const rect=cvs.getBoundingClientRect();
-    W=cvs.width=rect.width*devicePixelRatio||580;
-    H=cvs.height=240*devicePixelRatio||240;
-    cvs.style.height='240px';
-  }
-  resize();
-  window.addEventListener('resize',resize);
-
-  const PAD_L=50,PAD_R=20,PAD_T=20,PAD_B=45;
-  const scoreMax=1950;
-
-  function scoreToX(s){return PAD_L+(s/100)*(W-PAD_L-PAD_R);}
-  function ampToY(a){return H-PAD_B-(a*(H-PAD_T-PAD_B));}
-
-  function draw(){
-    ctx.clearRect(0,0,W,H);
-    t+=.012;
-
-    ctx.strokeStyle='rgba(100,160,220,.15)';
-    ctx.lineWidth=.5;
-    for(let i=0;i<=4;i++){
-      const y=ampToY(i/4);
-      ctx.beginPath();ctx.moveTo(PAD_L,y);ctx.lineTo(W-PAD_R,y);ctx.stroke();
-    }
-
-    companies.forEach((co)=>{
-      const anim=Math.sin(t+co.phase)*.04+1;
-      const peakAmp=anim*(co.peak/100)*(scoreMax/400);
-      const peakNorm=peakAmp/((scoreMax/400)*1.05);
-
-      ctx.beginPath();
-      let first=true;
-      for(let px=PAD_L;px<=W-PAD_R;px++){
-        const score=(px-PAD_L)/(W-PAD_L-PAD_R)*100;
-        const norm=gauss(score,co.peak,co.sigma)*peakNorm;
-        const y=ampToY(norm);
-        if(first){ctx.moveTo(px,y);first=false;}
-        else ctx.lineTo(px,y);
-      }
-      ctx.lineTo(W-PAD_R,ampToY(0));
-      ctx.lineTo(PAD_L,ampToY(0));
-      ctx.closePath();
-
-      const grad=ctx.createLinearGradient(0,ampToY(peakNorm),0,ampToY(0));
-      grad.addColorStop(0,co.color+'cc');
-      grad.addColorStop(.5,co.color+'55');
-      grad.addColorStop(1,co.color+'08');
-      ctx.fillStyle=grad;
-      ctx.fill();
-
-      ctx.beginPath();
-      first=true;
-      for(let px=PAD_L;px<=W-PAD_R;px++){
-        const score=(px-PAD_L)/(W-PAD_L-PAD_R)*100;
-        const norm=gauss(score,co.peak,co.sigma)*peakNorm;
-        const y=ampToY(norm);
-        if(first){ctx.moveTo(px,y);first=false;}
-        else ctx.lineTo(px,y);
-      }
-      ctx.strokeStyle=co.color;
-      ctx.lineWidth=2;
-      ctx.stroke();
-
-      const peakX=scoreToX(co.peak);
-      const peakY=ampToY(peakNorm);
-      ctx.fillStyle=co.color;
-      ctx.font=`600 12px ${FONT}`;
-      ctx.textAlign='center';
-      ctx.fillText(co.name,peakX,peakY-10);
-      ctx.font=`500 11px ${FONT}`;
-      ctx.fillStyle='rgba(200,230,255,.9)';
-      ctx.fillText(co.peak.toFixed(1),peakX,peakY-24);
-    });
-
-    ctx.strokeStyle='rgba(100,180,255,.3)';
-    ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(PAD_L,PAD_T);ctx.lineTo(PAD_L,H-PAD_B);ctx.lineTo(W-PAD_R,H-PAD_B);ctx.stroke();
-
-    const ticks=[0,20,40,60,80,100];
-    ctx.font=`500 11px ${FONT}`;
-    ctx.textAlign='center';
-    ctx.fillStyle='rgba(160,210,255,.8)';
-    ticks.forEach(s=>{
-      const x=scoreToX(s);
-      ctx.fillText(s,x,H-PAD_B+16);
-    });
-
-    ctx.textAlign='center';
-    ctx.font=`500 12px ${FONT}`;
-    ctx.fillStyle='rgba(140,200,255,.7)';
-    ctx.fillText('SEC Filing Risk Score (0–100)',W/2,H-4);
-
-    requestAnimationFrame(draw);
-  }
-  draw();
+ const k=[
+  {l:'Filings analysed',v:'25',s:'5 companies · 5 years',p:100,c:'#1f5f99'},
+  {l:'Portfolio average',v:PORT.toFixed(1),s:'out of 100',p:PORT,c:'#0e9f8e'},
+  {l:'High-risk filings',v:String(NHIGH),s:Math.round(NHIGH/25*100)+'% of the portfolio',p:NHIGH/25*100,c:LV.High},
+  {l:'Peak risk score',v:PEAK.score.toFixed(1),s:PEAK.co+' '+PEAK.year,p:PEAK.score,c:'#e8792b'}];
+ const w=$('kpis');
+ k.forEach(o=>{const b=document.createElement('button');b.className='kpi';b.type='button';b.setAttribute('aria-pressed','false');
+  b.innerHTML='<div class="l">'+o.l+'</div><div class="v">'+o.v+'</div><div class="s">'+o.s+'</div><div class="bar"><i style="background:'+o.c+'"></i></div>';
+  b.onclick=()=>{[...w.children].forEach(x=>{x.classList.remove('on');x.setAttribute('aria-pressed','false');});b.classList.add('on');b.setAttribute('aria-pressed','true');};
+  w.appendChild(b);setTimeout(()=>{b.querySelector('i').style.width=o.p+'%';},RM?0:350);});
 })();
 
-/* ── 3D ROTATING RISK CUBE ── */
+/* ---------- tide ridgeline ---------- */
 (function(){
-  const cvs=document.getElementById('cubeCanvas');
-  const ctx=cvs.getContext('2d');
-  const W=280,H=280;
-
-  let rotX=.45,rotY=.6,rotZ=0,dragging=false,lx,ly;
-  let autoRot=true;
-  let t=0;
-
-  const FACES=[
-    {label:'High Risk',color:'rgba(239,68,68,.75)',textCol:'#fff',co:'Boeing',score:91.4},
-    {label:'Elevated',color:'rgba(249,115,22,.75)',textCol:'#fff',co:'Tesla',score:57.8},
-    {label:'Moderate',color:'rgba(245,158,11,.8)', textCol:'#fff',co:'Amazon',score:36.9},
-    {label:'Low Risk',color:'rgba(34,197,94,.75)', textCol:'#fff',co:'Pfizer',score:14.7},
-    {label:'Portfolio',color:'rgba(59,130,246,.7)', textCol:'#fff',co:'All',score:52.3},
-    {label:'Analysis', color:'rgba(139,92,246,.7)', textCol:'#fff',co:'NLP',score:100},
-  ];
-
-  const VERTS=[
-    [-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
-    [-1,-1, 1],[1,-1, 1],[1,1, 1],[-1,1, 1]
-  ];
-  const FACE_IDX=[[0,1,2,3],[4,5,6,7],[0,4,7,3],[1,5,6,2],[0,1,5,4],[3,2,6,7]];
-
-  function mulM(m,v){
-    return[
-      m[0]*v[0]+m[1]*v[1]+m[2]*v[2],
-      m[3]*v[0]+m[4]*v[1]+m[5]*v[2],
-      m[6]*v[0]+m[7]*v[1]+m[8]*v[2]
-    ];
-  }
-  function rotMX(a){return[1,0,0,0,Math.cos(a),-Math.sin(a),0,Math.sin(a),Math.cos(a)];}
-  function rotMY(a){return[Math.cos(a),0,Math.sin(a),0,1,0,-Math.sin(a),0,Math.cos(a)];}
-
-  function project(v){
-    const z=v[2]+3.5;
-    const fov=W*.55;
-    return{x:v[0]*fov/z+W/2, y:v[1]*fov/z+H/2, z:v[2]};
-  }
-
-  function drawFace(fi){
-    const f=FACE_IDX[fi];
-    const my=rotMY(rotY);const mx=rotMX(rotX);
-    const pts=f.map(vi=>{
-      let v=mulM(my,VERTS[vi]);
-      v=mulM(mx,v);
-      return project(v);
-    });
-    const v0=f.map(vi=>{let v=mulM(my,VERTS[vi]);return mulM(mx,v);});
-    const ax=v0[1][0]-v0[0][0],ay=v0[1][1]-v0[0][1],az=v0[1][2]-v0[0][2];
-    const bx=v0[3][0]-v0[0][0],by=v0[3][1]-v0[0][1],bz=v0[3][2]-v0[0][2];
-    const nx=ay*bz-az*by,ny=az*bx-ax*bz,nz=ax*by-ay*bx;
-    const dot=nx*0+ny*0+nz*1;
-    return{pts,dot,fi,avgZ:pts.reduce((s,p)=>s+p.z,0)/4};
-  }
-
-  function draw(){
-    ctx.clearRect(0,0,W,H);
-    t+=.008;
-    if(autoRot){rotY+=.007;rotX+=.003;}
-
-    const faces=FACE_IDX.map((_,i)=>drawFace(i));
-    faces.sort((a,b)=>a.avgZ-b.avgZ);
-
-    faces.forEach(({pts,dot,fi})=>{
-      if(dot<0)return;
-      const face=FACES[fi];
-      const bright=Math.max(.3,dot);
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x,pts[0].y);
-      pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
-      ctx.closePath();
-      ctx.fillStyle=face.color;
-      ctx.globalAlpha=bright*.85+.1;
-      ctx.fill();
-      ctx.globalAlpha=1;
-      ctx.strokeStyle='rgba(200,235,255,.3)';
-      ctx.lineWidth=.8;
-      ctx.stroke();
-
-      const cx=pts.reduce((s,p)=>s+p.x,0)/4;
-      const cy=pts.reduce((s,p)=>s+p.y,0)/4;
-      ctx.fillStyle=face.textCol;
-      ctx.globalAlpha=bright*.9+.1;
-      ctx.font=`600 13px ${FONT}`;
-      ctx.textAlign='center';
-      ctx.fillText(face.label,cx,cy-8);
-      ctx.font=`500 11px ${FONT}`;
-      ctx.fillStyle='rgba(255,255,255,.85)';
-      ctx.fillText(face.co,cx,cy+6);
-      ctx.font=`600 12px ${FONT}`;
-      ctx.fillStyle='rgba(255,235,150,.95)';
-      ctx.fillText(face.score.toFixed(1),cx,cy+20);
-      ctx.globalAlpha=1;
-
-      const pulse=Math.sin(t*2+fi)*.5+.5;
-      const dotR=4+pulse*2;
-      ctx.beginPath();
-      ctx.arc(cx+18,cy-12,dotR,0,Math.PI*2);
-      ctx.fillStyle=`rgba(255,230,100,${.4+pulse*.4})`;
-      ctx.fill();
-    });
-
-    ctx.strokeStyle='rgba(100,200,255,.15)';
-    ctx.lineWidth=.5;
-    [[20,10,20,H-10],[W-20,10,W-20,H-10],[10,20,W-10,20],[10,H-20,W-10,H-20]].forEach(([x1,y1,x2,y2])=>{
-      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
-    });
-
-    ctx.font=`500 11px ${FONT}`;
-    ctx.fillStyle='rgba(140,200,255,.6)';
-    ctx.textAlign='center';
-    ctx.fillText('drag to rotate · auto-spin enabled',W/2,H-8);
-
-    requestAnimationFrame(draw);
-  }
-
-  cvs.addEventListener('mousedown',e=>{dragging=true;autoRot=false;lx=e.clientX;ly=e.clientY;cvs.style.cursor='grabbing';});
-  window.addEventListener('mouseup',()=>{dragging=false;cvs.style.cursor='grab';setTimeout(()=>autoRot=true,2000);});
-  window.addEventListener('mousemove',e=>{
-    if(!dragging)return;
-    rotY+=(e.clientX-lx)*.01;rotX+=(e.clientY-ly)*.01;
-    lx=e.clientX;ly=e.clientY;
+ const host=$('tide');const VW=1000,VH=540,X0=170,X1=950,rowH=88,base0=130,amp=1.15;
+ const svg=el('svg',{viewBox:'0 0 '+VW+' '+VH,width:'100%',role:'img','aria-label':'Risk score by company and year, drawn as waves'},host);
+ svg.style.height='auto';
+ const defs=el('defs',{},svg);
+ for(let gx=0;gx<=100;gx+=25){}
+ const xs=i=>X0+i*(X1-X0)/4;
+ YEARS.forEach((y,i)=>{el('line',{x1:xs(i),x2:xs(i),y1:20,y2:VH-44,stroke:'rgba(14,42,71,.12)','stroke-dasharray':'3 5'},svg);const t=el('text',{x:xs(i),y:VH-14,'text-anchor':'middle','font-size':15,fill:'#5f7a93','font-weight':700},svg);t.textContent=y;});
+ const groups=[];
+ COS.forEach((c,ri)=>{
+  const base=base0+ri*rowH;const g=el('g',{},svg);
+  const vals=SCORES[c.name];
+  const pts=vals.map((v,i)=>[xs(i),-v*amp*.9]);
+  // smooth path: extend ends flat
+  const P=[[X0-90,pts[0][1]],...pts,[X1+10,pts[4][1]]];
+  let d='M'+P[0][0]+',0 L'+P[0][0]+','+P[0][1];
+  for(let i=0;i<P.length-1;i++){const a=P[i],b=P[i+1],mx=(a[0]+b[0])/2;d+=' C'+mx+','+a[1]+' '+mx+','+b[1]+' '+b[0]+','+b[1];}
+  d+=' L'+P[P.length-1][0]+',0 Z';
+  const area=el('path',{d:d,fill:c.col,'fill-opacity':.82,stroke:'#fff','stroke-width':2.5,'stroke-linejoin':'round'},g);
+  const line=el('line',{x1:X0-90,x2:X1+10,y1:0,y2:0,stroke:'rgba(14,42,71,.25)'},g);
+  g.setAttribute('transform','translate(0,'+base+') scale(1,0.001)');
+  groups.push({g,base});
+  const lab=el('text',{x:14,y:base-6,'font-size':19,'font-weight':700,fill:'#0e2a47','font-family':'Fraunces,Georgia,serif'},svg);lab.textContent=c.name;
+  const l2=el('text',{x:14,y:base+13,'font-size':14,fill:'#34506b'},svg);l2.textContent='avg '+c.avg.toFixed(1)+' · '+c.lv;
+  vals.forEach((v,i)=>{
+   const cx=xs(i),cy=base-v*amp*.9;
+   const dot=el('circle',{cx:cx,cy:cy,r:5.5,fill:'#fff',stroke:c.col,'stroke-width':3,tabindex:0,'aria-label':c.name+' '+YEARS[i]+' score '+v.toFixed(1)},svg);
+   dot.style.opacity=0;dot.style.transition='opacity .4s .9s';dot.dataset.t=c.name+' '+YEARS[i]+': '+v.toFixed(1);
+   const show=()=>{const r=dot.getBoundingClientRect();showTip(r.left+r.width/2,r.top,dot.dataset.t);};
+   dot.addEventListener('pointerenter',show);dot.addEventListener('focus',show);dot.addEventListener('pointerleave',hideTip);dot.addEventListener('blur',hideTip);
+   groups[ri]=groups[ri]||{};(groups[ri].dots=groups[ri].dots||[]).push(dot);
   });
-  cvs.addEventListener('touchstart',e=>{autoRot=false;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
-  cvs.addEventListener('touchmove',e=>{
-    rotY+=(e.touches[0].clientX-lx)*.01;rotX+=(e.touches[0].clientY-ly)*.01;
-    lx=e.touches[0].clientX;ly=e.touches[0].clientY;
-    e.preventDefault();
-  },{passive:false});
-  draw();
+ });
+ // draw dots after all areas so they sit on top: re-append
+ groups.forEach(o=>o.dots.forEach(d=>svg.appendChild(d)));
+ onVisible(host,()=>{
+  groups.forEach((o,i)=>setTimeout(()=>{tween(1100,p=>o.g.setAttribute('transform','translate(0,'+o.base+') scale(1,'+Math.max(.001,p)+')'));},RM?0:i*140));
+  setTimeout(()=>groups.forEach(o=>o.dots.forEach(d=>d.style.opacity=1)),RM?0:100);
+ });
+ const lg=$('tideLegend');COS.forEach(c=>{lg.insertAdjacentHTML('beforeend','<span><i style="background:'+c.col+'"></i>'+c.name+'</span>');});
 })();
 
-/* ── ANIMATED SCORECARD — interactive hover ── */
-(()=>{
-  const c=document.getElementById('scorecardCanvas'),ctx=c.getContext('2d');
-  const DATA=[
-    {co:'Boeing', avg:91.4,lv:'High',    col:'#5bc8ff',lc:'#ef4444'},
-    {co:'Tesla',  avg:57.8,lv:'Elevated',col:'#a78bfa',lc:'#f97316'},
-    {co:'Amazon', avg:36.9,lv:'Moderate',col:'#34d399',lc:'#f59e0b'},
-    {co:'Pfizer', avg:14.7,lv:'Low',     col:'#fb7185',lc:'#22c55e'},
-    {co:'Airbnb', avg:3.1, lv:'Low',     col:'#fbbf24',lc:'#22c55e'},
-  ];
-  let t=0, animated=DATA.map(()=>0);
-  let hovIdx=-1, selIdx=-1;
-  // smooth hover brightness per row
-  let hoverAlpha=DATA.map(()=>0);
-  // tooltip pop state
-  let tipScale=DATA.map(()=>0);
-
-  const resize=()=>{const r=c.parentElement.getBoundingClientRect();c.width=r.width-28||240;c.height=200;};
-  resize(); addEventListener('resize',resize);
-
-  function rowH(){ return c.height/DATA.length; }
-  function idxAt(clientY){
-    const rect=c.getBoundingClientRect(), ry=clientY-rect.top;
-    const i=Math.floor(ry/rowH());
-    return(i>=0&&i<DATA.length)?i:-1;
-  }
-
-  c.addEventListener('mousemove',e=>{ hovIdx=idxAt(e.clientY); c.style.cursor=hovIdx>=0?'pointer':'default'; });
-  c.addEventListener('mouseleave',()=>{ hovIdx=-1; c.style.cursor='default'; });
-  c.addEventListener('click',e=>{ const i=idxAt(e.clientY); selIdx=(selIdx===i)?-1:i; });
-  c.addEventListener('touchstart',e=>{ const i=idxAt(e.touches[0].clientY); selIdx=(selIdx===i)?-1:i; e.preventDefault(); },{passive:false});
-
-  const draw=()=>{
-    const W=c.width, H=c.height;
-    ctx.clearRect(0,0,W,H); t+=.018;
-    const rH=rowH(), barW=W-118, BAR_X=100;
-
-    DATA.forEach((d,i)=>{
-      if(animated[i]<d.avg) animated[i]=Math.min(d.avg,animated[i]+1.8);
-
-      const isHov=hovIdx===i, isSel=selIdx===i;
-      // smoothly animate hover alpha
-      hoverAlpha[i]+=(( (isHov||isSel)?1:0 )-hoverAlpha[i])*.12;
-      tipScale[i]+=(( (isHov||isSel)?1:0 )-tipScale[i])*.14;
-
-      const ha=hoverAlpha[i];
-      const y=i*rH, midY=y+rH/2;
-      const bH=rH-8;
-
-      // row bg — base shimmer + hover highlight
-      const shimmer=Math.sin(t+i*.6)*.5+.5;
-      ctx.fillStyle=`rgba(91,200,255,${.03+shimmer*.03})`;
-      ctx.beginPath(); ctx.roundRect(0,y+2,W,bH,6); ctx.fill();
-      if(ha>0.01){
-        ctx.fillStyle=`rgba(${isSel?'120,200,255':'91,200,255'},${ha*(isSel?.13:.08)})`;
-        ctx.beginPath(); ctx.roundRect(0,y+2,W,bH,6); ctx.fill();
-        // left accent strip
-        ctx.fillStyle=d.col;
-        ctx.globalAlpha=ha*.9;
-        ctx.beginPath(); ctx.roundRect(0,y+3,3,bH-2,2); ctx.fill();
-        ctx.globalAlpha=1;
-      }
-
-      // dot — grows on hover
-      const dotR=5+ha*3;
-      ctx.beginPath(); ctx.arc(12,midY,dotR,0,Math.PI*2);
-      ctx.fillStyle=d.col;
-      if(ha>0.01){ ctx.shadowBlur=10*ha; ctx.shadowColor=d.col; }
-      ctx.fill(); ctx.shadowBlur=0;
-
-      // company name — brightens
-      ctx.font=`${isSel?'700':'600'} ${13+ha*1.5}px ${FONT}`;
-      ctx.fillStyle=`rgba(${ha>.5?'255,255,255':'232,244,255'},${.75+ha*.25})`;
-      ctx.textAlign='left';
-      ctx.fillText(d.co, 24, midY+4);
-
-      // risk badge on hover
-      if(ha>0.05){
-        const badgeColors={High:'#ef4444',Elevated:'#f97316',Moderate:'#f59e0b',Low:'#22c55e'};
-        const bc=badgeColors[d.lv]||'#aaa';
-        ctx.font=`600 9px ${FONT}`; ctx.textAlign='left';
-        ctx.fillStyle=bc; ctx.globalAlpha=ha;
-        ctx.fillText(d.lv.toUpperCase(), 24, midY+15);
-        ctx.globalAlpha=1;
-      }
-
-      // bar track
-      ctx.fillStyle='rgba(255,255,255,.07)';
-      ctx.beginPath(); ctx.roundRect(BAR_X, midY-5, barW, 10, 5); ctx.fill();
-
-      // bar fill — slightly taller on hover
-      const bw=(animated[i]/100)*barW;
-      const barH=10+ha*3, barY=midY-5-ha*1.5;
-      const barGr=ctx.createLinearGradient(BAR_X,barY,BAR_X,barY+barH);
-      barGr.addColorStop(0,d.col+'ff'); barGr.addColorStop(.5,d.col+'cc'); barGr.addColorStop(1,d.col+'88');
-      ctx.fillStyle=barGr;
-      ctx.beginPath(); ctx.roundRect(BAR_X, barY, bw, barH, 5); ctx.fill();
-
-      // selected border outline
-      if(isSel&&ha>.1){
-        ctx.strokeStyle=d.col; ctx.lineWidth=1.5; ctx.globalAlpha=ha;
-        ctx.beginPath(); ctx.roundRect(1,y+3,W-2,bH-2,6); ctx.stroke();
-        ctx.globalAlpha=1; ctx.lineWidth=1;
-      }
-
-      // glow pulse on bar tip
-      const gp=Math.sin(t*2+i)*.5+.5;
-      ctx.shadowBlur=(8+ha*10)*gp; ctx.shadowColor=d.col;
-      ctx.fillStyle=`rgba(255,255,255,${(.25+ha*.2)*gp})`;
-      ctx.beginPath(); ctx.roundRect(BAR_X, midY-2, Math.min(bw,20+ha*6), 4+ha*2, 2); ctx.fill();
-      ctx.shadowBlur=0;
-
-      // score value
-      ctx.font=`700 ${13+ha*2}px ${FONT}`; ctx.fillStyle=d.lc; ctx.textAlign='right';
-      if(ha>0.01){ ctx.shadowBlur=6*ha; ctx.shadowColor=d.lc; }
-      ctx.fillText(d.avg.toFixed(1), W-4, midY+4);
-      ctx.shadowBlur=0;
-
-      // tooltip card on hover
-      if(tipScale[i]>0.05){
-        const ts=tipScale[i];
-        const tx=BAR_X+bw*.5, ty=y+2;
-        const tw=110, th=38;
-        ctx.save();
-        ctx.globalAlpha=ts;
-        ctx.translate(tx,ty);
-        ctx.scale(ts,ts);
-        ctx.fillStyle='rgba(2,14,40,.93)';
-        ctx.strokeStyle=d.col; ctx.lineWidth=1;
-        ctx.beginPath(); ctx.roundRect(-tw/2,-th-4,tw,th,7); ctx.fill(); ctx.stroke();
-        ctx.font=`600 11px ${FONT}`; ctx.fillStyle='#fff'; ctx.textAlign='center';
-        ctx.fillText(d.co+' · '+d.lv,0,-th+10);
-        ctx.font=`500 10px ${FONT}`; ctx.fillStyle=d.col;
-        ctx.fillText('Avg score: '+d.avg.toFixed(1)+' / 100',0,-th+24);
-        ctx.restore();
-      }
-    });
-
-    requestAnimationFrame(draw);
-  };
-  draw();
+/* ---------- distribution ---------- */
+(function(){
+ const c=$('dist'),x=c.getContext('2d');let W,H,prog=0,dots=[];
+ function size(){const r=c.parentElement.getBoundingClientRect();const w=Math.max(260,r.width-44);const d=dpr();c.style.width=w+'px';c.width=w*d;c.height=270*d;c.style.height='270px';W=w;H=270;x.setTransform(d,0,0,d,0,0);draw();}
+ const L=34,R=14,T=16,B=58;
+ const X=s=>L+s/100*(W-L-R);
+ const kde=s=>ALL.reduce((a,f)=>a+Math.exp(-Math.pow(s-f.score,2)/(2*4.5*4.5)),0);
+ const mx=Math.max(...Array.from({length:101},(_,i)=>kde(i)));
+ function draw(){
+  x.clearRect(0,0,W,H);
+  x.font='600 13px Figtree,system-ui,sans-serif';x.textAlign='center';x.fillStyle='#5f7a93';
+  [0,25,50,75,100].forEach(s=>{x.fillText(s,X(s),H-8);x.strokeStyle='rgba(14,42,71,.1)';x.beginPath();x.moveTo(X(s),T);x.lineTo(X(s),H-B+6);x.stroke();});
+  const top=H-B;
+  x.save();x.beginPath();x.rect(0,0,L+(W-L)*prog,H);x.clip();
+  x.beginPath();x.moveTo(X(0),top);for(let s=0;s<=100;s+=1){x.lineTo(X(s),top-(kde(s)/mx)*(top-T-6));}x.lineTo(X(100),top);x.closePath();
+  const g=x.createLinearGradient(0,T,0,top);g.addColorStop(0,'rgba(14,143,168,.85)');g.addColorStop(1,'rgba(14,143,168,.15)');x.fillStyle=g;x.fill();
+  x.lineWidth=3;x.strokeStyle='#0b6f86';x.stroke();x.restore();
+  dots=[];
+  const cnt={};
+  ALL.slice().sort((a,b)=>a.score-b.score).forEach(f=>{const k=Math.round(f.score/3);cnt[k]=(cnt[k]||0)+1;const px=X(f.score),py=top+16+(cnt[k]-1)*13;dots.push({px,py,f});
+   x.beginPath();x.arc(px,py,5,0,7);x.fillStyle=f.col;x.globalAlpha=prog>.2?1:0;x.fill();x.globalAlpha=1;x.lineWidth=1.5;x.strokeStyle='#fff';x.stroke();});
+ }
+ c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect();const mx_=e.clientX-r.left,my=e.clientY-r.top;let b=null,bd=14;dots.forEach(d=>{const q=Math.hypot(d.px-mx_,d.py-my);if(q<bd){bd=q;b=d;}});if(b)showTip(r.left+b.px,r.top+b.py-4,b.f.id+': '+b.f.score.toFixed(1));else hideTip();});
+ c.addEventListener('pointerleave',hideTip);
+ size();addEventListener('resize',size);
+ onVisible(c,()=>tween(1600,p=>{prog=p;draw();}));
 })();
 
-/* ── STATIC DONUT CHART (Chart.js — from old version) ── */
-new Chart(document.getElementById('donutC'),{
-  type:'doughnut',
-  data:{
-    labels:['Low','Moderate','Elevated','High'],
-    datasets:[{data:[10,5,5,5],backgroundColor:['#22c55e','#f59e0b','#f97316','#ef4444'],borderColor:'rgba(2,15,45,.8)',borderWidth:2,hoverOffset:8}]
-  },
-  options:{
-    responsive:true,maintainAspectRatio:false,cutout:'62%',
-    animation:{duration:0},
-    plugins:{
-      legend:{display:true,position:'bottom',labels:{color:'#a8d4f0',font:{size:11,family:'Inter,sans-serif'},padding:8,boxWidth:10,boxHeight:10}},
-      tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw} filings`}}
-    }
+/* ---------- 3D cube ---------- */
+(function(){
+ const c=$('cube'),x=c.getContext('2d');const W=300,H=300;
+ const dp=dpr();c.width=W*dp;c.height=H*dp;c.style.width=W+'px';c.style.maxWidth='100%';c.style.height='auto';x.setTransform(dp,0,0,dp,0,0);
+ let rx=.45,ry=.6,drag=false,lx,ly,auto=true,t=0,tm=null;
+ const F=[
+  {lab:'High risk',co:'Boeing',sc:COS[0].avg,col:LV.High,tx:'#fff'},
+  {lab:'Elevated',co:'Tesla',sc:COS[1].avg,col:LV.Elevated,tx:'#fff'},
+  {lab:'Moderate',co:'Amazon',sc:COS[2].avg,col:LV.Moderate,tx:'#0e2a47'},
+  {lab:'Low risk',co:'Pfizer',sc:COS[3].avg,col:LV.Low,tx:'#fff'},
+  {lab:'Low risk',co:'Airbnb',sc:COS[4].avg,col:'#1f8a87',tx:'#fff'},
+  {lab:'Portfolio',co:'All 25',sc:PORT,col:'#1f5f99',tx:'#fff'}];
+ const V=[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]];
+ const FI=[[0,1,2,3],[4,5,6,7],[0,4,7,3],[1,5,6,2],[0,1,5,4],[3,2,6,7]];
+ const mul=(m,v)=>[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];
+ const RX=a=>[1,0,0,0,Math.cos(a),-Math.sin(a),0,Math.sin(a),Math.cos(a)],RY=a=>[Math.cos(a),0,Math.sin(a),0,1,0,-Math.sin(a),0,Math.cos(a)];
+ const pr=v=>{const z=v[2]+3.6,f=W*.72;return{x:v[0]*f/z+W/2,y:v[1]*f/z+H/2,z:v[2]};};
+ track(c);
+ function draw(){
+  if(vis.get(c)!==false){
+  x.clearRect(0,0,W,H);t+=.01;if(auto&&!RM){ry+=.007;rx+=.0025;}
+  const my=RY(ry),mxm=RX(rx);
+  // soft shadow
+  x.beginPath();x.ellipse(W/2,H-18,70,9,0,0,7);x.fillStyle='rgba(14,42,71,.12)';x.fill();
+  const fs=FI.map((f,i)=>{const v=f.map(k=>mul(mxm,mul(my,V[k])));const p=v.map(pr);
+   const ax=v[1][0]-v[0][0],ay=v[1][1]-v[0][1],az=v[1][2]-v[0][2],bx=v[3][0]-v[0][0],by=v[3][1]-v[0][1],bz=v[3][2]-v[0][2];
+   const cz=v.reduce((s,q)=>s+q[2],0)/4;return{p,nz:-cz*4,i,z:cz};}).sort((a,b)=>b.z-a.z);
+  fs.forEach(({p,nz,i})=>{if(nz<=0)return;const f=F[i],br=Math.max(.35,nz/4*.7+.3);
+   x.beginPath();x.moveTo(p[0].x,p[0].y);for(let k=1;k<4;k++)x.lineTo(p[k].x,p[k].y);x.closePath();
+   x.fillStyle=f.col;x.fill();x.fillStyle='rgba(255,255,255,'+(.42-br*.4)+')';x.fill();
+   x.lineWidth=2;x.strokeStyle='rgba(255,255,255,.9)';x.lineJoin='round';x.stroke();
+   const cx=p.reduce((s,q)=>s+q.x,0)/4,cy=p.reduce((s,q)=>s+q.y,0)/4;
+   x.textAlign='center';x.fillStyle=f.tx;
+   x.font='700 15px Figtree,system-ui,sans-serif';x.fillText(f.lab,cx,cy-10);
+   x.font='600 13px Figtree,system-ui,sans-serif';x.fillText(f.co,cx,cy+7);
+   x.font='700 17px Fraunces,Georgia,serif';x.fillText(f.sc.toFixed(1),cx,cy+26);});
   }
-});
-
-/* ── ANIMATED 3D DRIVERS (canvas — interactive) ── */
-(()=>{
-  const c=document.getElementById('driversCanvas'),ctx=c.getContext('2d');
-  const DRIVERS=[
-    {name:'Revenue/Demand',val:36.9,col:'#5bc8ff'},
-    {name:'Regulatory',    val:31.1,col:'#a78bfa'},
-    {name:'Supply Chain',  val:22.5,col:'#34d399'},
-    {name:'Macroeconomic', val:8.9, col:'#fbbf24'},
-    {name:'Debt/Credit',   val:8.7, col:'#fb7185'},
-  ];
-  let t=0,progress=DRIVERS.map(()=>0);
-  let hoveredIdx=-1, selectedIdx=-1;
-  let tooltip={visible:false,x:0,y:0,idx:-1};
-
-  const resize=()=>{const r=c.parentElement.getBoundingClientRect();c.width=r.width-28||240;c.height=160};
-  resize();addEventListener('resize',resize);
-
-  /* ── mouse interaction ── */
-  function getRowH(){return c.height/DRIVERS.length;}
-  function idxFromY(clientY){
-    const rect=c.getBoundingClientRect();
-    const cy=clientY-rect.top;
-    const i=Math.floor(cy/getRowH());
-    return(i>=0&&i<DRIVERS.length)?i:-1;
-  }
-  c.addEventListener('mousemove',e=>{
-    const i=idxFromY(e.clientY);
-    hoveredIdx=i;
-    if(i>=0){
-      c.style.cursor='pointer';
-      const rect=c.getBoundingClientRect();
-      tooltip={visible:true,x:e.clientX-rect.left,y:e.clientY-rect.top,idx:i};
-    } else {
-      c.style.cursor='default';
-      tooltip.visible=false;
-    }
-  });
-  c.addEventListener('mouseleave',()=>{hoveredIdx=-1;tooltip.visible=false;c.style.cursor='default';});
-  c.addEventListener('click',e=>{
-    const i=idxFromY(e.clientY);
-    selectedIdx=(selectedIdx===i)?-1:i;
-  });
-  /* touch support */
-  c.addEventListener('touchstart',e=>{
-    const t=e.touches[0];
-    const i=idxFromY(t.clientY);
-    selectedIdx=(selectedIdx===i)?-1:i;
-    e.preventDefault();
-  },{passive:false});
-
-  const draw=()=>{
-    const W=c.width,H=c.height;
-    ctx.clearRect(0,0,W,H);t+=.016;
-    progress=progress.map((p,i)=>Math.min(1,p+.02+i*.003));
-    const rowH=H/DRIVERS.length,maxVal=DRIVERS[0].val,PL=106,PR=36;
-    DRIVERS.forEach((d,i)=>{
-      const isHov=hoveredIdx===i, isSel=selectedIdx===i;
-      const y=i*rowH+4,bH=rowH-10;
-      const barW=(W-PL-PR)*(d.val/maxVal)*progress[i];
-      const depth=4;
-      /* hover/select row highlight */
-      if(isHov||isSel){
-        ctx.fillStyle=isSel?`rgba(255,255,255,.09)`:`rgba(255,255,255,.05)`;
-        ctx.beginPath();ctx.roundRect(0,i*rowH,W,rowH,4);ctx.fill();
-      }
-      /* side face */
-      ctx.fillStyle=d.col+'44';
-      ctx.beginPath();
-      ctx.moveTo(PL,y);ctx.lineTo(PL+barW,y);
-      ctx.lineTo(PL+barW+depth,y-depth);ctx.lineTo(PL+depth,y-depth);
-      ctx.closePath();ctx.fill();
-      /* front face gradient */
-      const scaledBH=isSel?bH+2:bH;
-      const scaleY=isSel?y-1:y;
-      const gr=ctx.createLinearGradient(PL,scaleY,PL,scaleY+scaledBH);
-      gr.addColorStop(0,d.col+'ff');gr.addColorStop(1,d.col+'88');
-      ctx.fillStyle=gr;
-      ctx.beginPath();ctx.roundRect(PL,scaleY,barW*(isHov&&!isSel?1.02:1),scaledBH,3);ctx.fill();
-      /* selected glow border */
-      if(isSel){
-        ctx.strokeStyle=d.col;ctx.lineWidth=1.5;
-        ctx.beginPath();ctx.roundRect(PL,scaleY,barW,scaledBH,3);ctx.stroke();
-        ctx.lineWidth=1;
-      }
-      /* shine strip */
-      ctx.fillStyle='rgba(255,255,255,.12)';
-      ctx.beginPath();ctx.roundRect(PL,scaleY,barW*.6,scaledBH*.35,2);ctx.fill();
-      /* animated scan line */
-      const scan=(Math.sin(t*2+i*.5)+1)/2;
-      const scanX=PL+barW*scan;
-      ctx.fillStyle=`rgba(255,255,255,${.22*(1-Math.abs(scan-.5)*2)})`;
-      ctx.fillRect(scanX-1,scaleY,3,scaledBH);
-      /* label */
-      ctx.font=`${isHov||isSel?'700':'600'} 11px ${FONT}`;
-      ctx.fillStyle=isHov||isSel?'#ffffff':'#c8e8ff';
-      ctx.textAlign='right';
-      ctx.fillText(d.name,PL-5,y+bH/2+4);
-      /* value */
-      if(progress[i]>.4){
-        ctx.font=`700 11px ${FONT}`;ctx.fillStyle=d.col;ctx.textAlign='left';
-        ctx.fillText(d.val.toFixed(1),PL+barW+depth+4,y+bH/2+4);
-      }
-    });
-    /* axis */
-    ctx.strokeStyle='rgba(100,180,255,.2)';ctx.lineWidth=.5;
-    ctx.beginPath();ctx.moveTo(PL,0);ctx.lineTo(PL,H);ctx.stroke();
-
-    /* tooltip */
-    if(tooltip.visible&&tooltip.idx>=0){
-      const d=DRIVERS[tooltip.idx];
-      const share=((d.val/DRIVERS.reduce((a,x)=>a+x.val,0))*100).toFixed(1);
-      const tx=Math.min(tooltip.x+10,W-120),ty=Math.max(tooltip.y-36,4);
-      ctx.fillStyle='rgba(2,14,40,.92)';
-      ctx.strokeStyle=d.col;ctx.lineWidth=1;
-      ctx.beginPath();ctx.roundRect(tx,ty,112,34,6);ctx.fill();ctx.stroke();
-      ctx.font=`600 11px ${FONT}`;ctx.fillStyle='#ffffff';ctx.textAlign='left';
-      ctx.fillText(d.name,tx+8,ty+14);
-      ctx.font=`500 10px ${FONT}`;ctx.fillStyle=d.col;
-      ctx.fillText(`Score: ${d.val}  ·  Share: ${share}%`,tx+8,ty+27);
-    }
-
-    requestAnimationFrame(draw);
-  };
-  draw();
+  requestAnimationFrame(draw);
+ }
+ const pt=e=>e.touches?e.touches[0]:e;
+ c.addEventListener('pointerdown',e=>{drag=true;auto=false;lx=e.clientX;ly=e.clientY;c.setPointerCapture(e.pointerId);c.style.cursor='grabbing';});
+ c.addEventListener('pointermove',e=>{if(!drag)return;ry+=(e.clientX-lx)*.01;rx+=(e.clientY-ly)*.01;lx=e.clientX;ly=e.clientY;});
+ const up=()=>{drag=false;c.style.cursor='grab';clearTimeout(tm);tm=setTimeout(()=>auto=true,2000);};
+ c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
+ if(RM){rx=.5;ry=.7;auto=false;}
+ draw();
 })();
 
-/* ── RAG RETRIEVAL GALAXY (3D) + ANALYST ASSISTANT ── */
-(()=>{
-  /* ---- drifting starfield + nebula backdrop ---- */
-  (function(){
-    const sc=document.getElementById('ragStarsCanvas'), sctx=sc.getContext('2d');
-    let SW,SH,st=0;
-    const stars=[];
-    function sresize(){
-      const r=sc.parentElement.getBoundingClientRect();
-      SW=sc.width=r.width; SH=sc.height=r.height;
-    }
-    sresize(); addEventListener('resize',sresize);
-    for(let i=0;i<160;i++){
-      stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.4+.3,a:Math.random()*.6+.2,tw:Math.random()*Math.PI*2,sp:Math.random()*.6+.2});
-    }
-    const nebulae=[
-      {x:.22,y:.28,r:.55,c:'91,200,255'},
-      {x:.78,y:.65,r:.5, c:'167,139,250'},
-      {x:.5, y:.85,r:.45,c:'52,211,153'},
-    ];
-    function sdraw(){
-      sctx.clearRect(0,0,SW,SH); st+=.006;
-      nebulae.forEach((n,i)=>{
-        const cx=n.x*SW+Math.sin(st*.3+i)*20, cy=n.y*SH+Math.cos(st*.25+i)*20;
-        const g=sctx.createRadialGradient(cx,cy,0,cx,cy,n.r*Math.max(SW,SH));
-        g.addColorStop(0,`rgba(${n.c},.10)`); g.addColorStop(1,'rgba(0,0,0,0)');
-        sctx.fillStyle=g; sctx.fillRect(0,0,SW,SH);
-      });
-      stars.forEach(s=>{
-        const tw=Math.sin(st*s.sp*3+s.tw)*.5+.5;
-        sctx.beginPath();
-        sctx.arc(s.x*SW,s.y*SH,s.r,0,Math.PI*2);
-        sctx.fillStyle=`rgba(210,235,255,${s.a*(.5+tw*.5)})`;
-        sctx.fill();
-      });
-      requestAnimationFrame(sdraw);
-    }
-    sdraw();
-  })();
+/* ---------- icebergs ---------- */
+(function(){
+ const host=$('icebergs');const VW=1000,VH=400,WL=180;
+ const svg=el('svg',{viewBox:'0 0 '+VW+' '+VH,width:'100%',role:'img','aria-label':'One iceberg per company; the tip shows the average risk score'},host);svg.style.height='auto';
+ const d=el('defs',{},svg);
+ let g=el('linearGradient',{id:'wg',x1:0,y1:0,x2:0,y2:1},d);el('stop',{offset:0,'stop-color':'#8fd3e3','stop-opacity':.9},g);el('stop',{offset:1,'stop-color':'#2c7e98','stop-opacity':.95},g);
+ g=el('linearGradient',{id:'ig',x1:0,y1:0,x2:0,y2:1},d);el('stop',{offset:0,'stop-color':'#ffffff','stop-opacity':.96},g);el('stop',{offset:1,'stop-color':'#d6eef6','stop-opacity':.9},g);
+ el('rect',{x:0,y:WL,width:VW,height:VH-WL,fill:'url(#wg)',rx:14},svg);
+ el('path',{d:'M0,'+WL+' Q 62,'+(WL-7)+' 125,'+WL+' T 250,'+WL+' T 375,'+WL+' T 500,'+WL+' T 625,'+WL+' T 750,'+WL+' T 875,'+WL+' T 1000,'+WL,fill:'none',stroke:'#fff','stroke-width':2.5,opacity:.9},svg);
+ 
+ COS.forEach((c,i)=>{
+  const cx=100+i*200;const grp=el('g',{},svg);grp.style.animation=RM?'none':'bob '+(5+i*.7)+'s ease-in-out '+(i*.5)+'s infinite';
+  const h=Math.max(8,c.avg/100*150),w=100+h*.45;
+  // submerged
+  const sw=84;
+  el('path',{d:'M'+(cx-w/2)+','+WL+' L'+(cx-sw)+','+(WL+60)+' L'+(cx-sw+22)+','+(WL+150)+' L'+(cx+6)+','+(WL+196)+' L'+(cx+sw-8)+','+(WL+130)+' L'+(cx+sw)+','+(WL+55)+' L'+(cx+w/2)+','+WL+' Z',fill:'url(#ig)',opacity:.88},grp);
+  // tip
+  const tip_=el('path',{d:'M'+(cx-w/2)+','+WL+' L'+(cx-w*.22)+','+(WL-h*.72)+' L'+(cx-w*.04)+','+(WL-h)+' L'+(cx+w*.2)+','+(WL-h*.7)+' L'+(cx+w/2)+','+WL+' Z',fill:'url(#ig)',stroke:'#fff','stroke-width':2},grp);
+  el('path',{d:'M'+(cx-w*.04)+','+(WL-h)+' L'+(cx+w*.2)+','+(WL-h*.7)+' L'+(cx+w/2)+','+WL+' L'+(cx+w*.06)+','+WL+' Z',fill:'rgba(120,180,205,.35)'},grp);
+  const n=el('text',{x:cx,y:WL+86,'text-anchor':'middle','font-size':19,'font-weight':700,fill:'#0e2a47','font-family':'Fraunces,Georgia,serif'},grp);n.textContent=c.name;
+  const a=el('text',{x:cx,y:WL+110,'text-anchor':'middle','font-size':15,fill:'#34506b'},grp);a.textContent='avg '+c.avg.toFixed(1);
+  const lvl=el('rect',{x:cx-34,y:WL+122,width:68,height:22,rx:11,fill:LV[c.lv]},grp);
+  const lt=el('text',{x:cx,y:WL+138,'text-anchor':'middle','font-size':13,'font-weight':700,fill:LVTXT[c.lv]},grp);lt.textContent=c.lv;
+ });
+})();
 
-  const CLUSTERS=[
-    {name:'Boeing', col:'#5bc8ff', az:0},
-    {name:'Tesla',  col:'#a78bfa', az:72},
-    {name:'Amazon', col:'#34d399', az:144},
-    {name:'Pfizer', col:'#fb7185', az:216},
-    {name:'Airbnb', col:'#fbbf24', az:288},
-  ];
-  const SCORES={
-    Boeing:[100.00,87.15,85.54,77.02,76.89],
-    Tesla:[63.80,71.01,66.04,64.79,67.42],
-    Amazon:[42.75,45.31,46.07,45.71,43.67],
-    Pfizer:[12.50,13.80,14.70,15.90,16.60],
-    Airbnb:[0.00,4.95,5.29,13.41,11.39],
-  };
-  const YEARS=[2021,2022,2023,2024,2025];
+/* ---------- filing grid ---------- */
+(function(){
+ const g=$('grid');g.appendChild(document.createElement('div'));
+ YEARS.forEach(y=>{const h=document.createElement('div');h.className='h';h.textContent=y;g.appendChild(h);});
+ const tiles=[];
+ COS.forEach(c=>{const n=document.createElement('div');n.className='n';n.textContent=c.name;g.appendChild(n);
+  YEARS.forEach((y,i)=>{const s=SCORES[c.name][i];const t=document.createElement('div');t.className='tile';t.textContent=s.toFixed(0);t.style.background=LV[c.lv];t.style.color=LVTXT[c.lv];t.tabIndex=0;t.setAttribute('aria-label',c.name+' '+y+', score '+s.toFixed(1)+', '+c.lv);
+   const sh=()=>{const r=t.getBoundingClientRect();showTip(r.left+r.width/2,r.top,c.name+' '+y+': '+s.toFixed(1)+' ('+c.lv+')');};
+   t.addEventListener('pointerenter',sh);t.addEventListener('focus',sh);t.addEventListener('pointerleave',hideTip);t.addEventListener('blur',hideTip);
+   g.appendChild(t);tiles.push(t);});});
+ const l=$('lvs');['Low','Moderate','Elevated','High'].forEach(k=>{const n=ALL.filter(f=>f.lv===k).length;l.insertAdjacentHTML('beforeend','<span style="background:'+LV[k]+';color:'+LVTXT[k]+'">'+k+' · '+n+'</span>');});
+ onVisible(g,()=>tiles.forEach((t,i)=>setTimeout(()=>t.classList.add('in'),RM?0:i*35)));
+})();
 
-  // build 25 filing nodes on a jittered sphere, clustered by company
-  const FILINGS=[];
-  CLUSTERS.forEach((cl,ci)=>{
-    const azRad=cl.az*Math.PI/180;
-    const baseDir=[Math.cos(azRad),Math.sin(azRad)*.5,Math.sin(azRad)];
-    // normalize
-    const bl=Math.hypot(...baseDir); const bd=baseDir.map(v=>v/bl);
-    YEARS.forEach((yr,yi)=>{
-      // deterministic pseudo-random spread per filing
-      const seed=ci*5+yi;
-      const frac=x=>x-Math.floor(x); // always in [0,1)
-      const jx=frac(Math.sin(seed*12.9898)*43758.5453);
-      const jy=frac(Math.sin(seed*78.233)*12345.678);
-      const jz=frac(Math.sin(seed*39.425)*98765.4321);
-      const spread=.42;
-      const pos=[
-        bd[0]*1.15+(jx-.5)*spread,
-        bd[1]*1.15+(jy-.5)*spread+(yi-2)*.07,
-        bd[2]*1.15+(jz-.5)*spread
-      ];
-      FILINGS.push({
-        id:cl.name+' '+yr, company:cl.name, year:yr, col:cl.col,
-        score:SCORES[cl.name][yi], pos
-      });
-    });
+/* ---------- compass ---------- */
+(function(){
+ const c=$('compass'),x=c.getContext('2d');let W,H=330,prog=0,hov=-1;
+ function size(){const r=c.parentElement.getBoundingClientRect();W=Math.max(240,r.width-44);const d=dpr();c.style.width=W+'px';c.width=W*d;c.height=H*d;c.style.height=H+'px';x.setTransform(d,0,0,d,0,0);draw();}
+ const mx=Math.max(...DRIVERS.map(d=>d.val));
+ function draw(){
+  x.clearRect(0,0,W,H);const cx=W/2,cy=H/2+4,R=Math.min(W/2-(W<340?66:92),H/2-40),n=DRIVERS.length,step=Math.PI*2/n,a0=-Math.PI/2-step/2;
+  [.33,.66,1].forEach(f=>{x.beginPath();x.arc(cx,cy,R*f,0,7);x.strokeStyle='rgba(14,42,71,.12)';x.lineWidth=1;x.stroke();});
+  DRIVERS.forEach((d,i)=>{
+   const s=a0+i*step,e=s+step-.05,r=Math.max(10,(d.val/mx)*R*prog),h=hov===i;
+   x.beginPath();x.moveTo(cx,cy);x.arc(cx,cy,r+(h?6:0),s,e);x.closePath();x.fillStyle=d.col;x.globalAlpha=h?1:.85;x.fill();x.globalAlpha=1;x.lineWidth=2.5;x.strokeStyle='#fff';x.stroke();
+   const m=(s+e)/2,lr=R+16;x.font='700 13px Figtree,system-ui,sans-serif';x.fillStyle='#0e2a47';
+   const lx=cx+Math.cos(m)*lr,ly=cy+Math.sin(m)*lr;x.textAlign=Math.cos(m)>.3?'left':Math.cos(m)<-.3?'right':'center';
+   x.fillText(d.name,lx,ly+(Math.sin(m)>.5?10:Math.sin(m)<-.5?-2:4));
+   x.font='600 13px Figtree,system-ui,sans-serif';x.fillStyle='#34506b';x.fillText(d.val.toFixed(1),lx,ly+(Math.sin(m)>.5?25:Math.sin(m)<-.5?13:19));
   });
-  function fIdx(id){ return FILINGS.findIndex(f=>f.id===id); }
+  x.beginPath();x.arc(cx,cy,5,0,7);x.fillStyle='#fff';x.fill();
+ }
+ c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect();const mx_=e.clientX-r.left-W/2,my=e.clientY-r.top-H/2-4;let a=Math.atan2(my,mx_)+Math.PI/2+Math.PI/DRIVERS.length;a=(a+Math.PI*4)%(Math.PI*2);const i=Math.floor(a/(Math.PI*2/DRIVERS.length));const nh=Math.hypot(mx_,my)<Math.min(W/2-(W<340?66:92),H/2-40)+8?i:-1;if(nh!==hov){hov=nh;draw();}});
+ c.addEventListener('pointerleave',()=>{hov=-1;draw();});
+ size();addEventListener('resize',size);
+ onVisible(c,()=>tween(1200,p=>{prog=p;draw();}));
+})();
 
-  const RAG_QUESTIONS=[
+/* ---------- RAG galaxy + assistant ---------- */
+(function(){
+ const FIL=[];
+ COS.forEach((cl,ci)=>{const az=cl.az*Math.PI/180;const bd0=[Math.cos(az),Math.sin(az)*.5,Math.sin(az)];const bl=Math.hypot(...bd0);const bd=bd0.map(v=>v/bl);
+  YEARS.forEach((yr,yi)=>{const seed=ci*5+yi,fr=q=>q-Math.floor(q);
+   const jx=fr(Math.sin(seed*12.9898)*43758.5453),jy=fr(Math.sin(seed*78.233)*12345.678),jz=fr(Math.sin(seed*39.425)*98765.4321),sp=.42;
+   FIL.push({id:cl.name+' '+yr,company:cl.name,year:yr,col:cl.col,score:SCORES[cl.name][yi],pos:[bd[0]*1.15+(jx-.5)*sp,bd[1]*1.15+(jy-.5)*sp+(yi-2)*.07,bd[2]*1.15+(jz-.5)*sp]});});});
+ const fIdx=id=>FIL.findIndex(f=>f.id===id);
+ const RQ=[
     {
       q:"Why is Boeing classified as high risk?",
       retrieved:[["Boeing 2025",.254],["Boeing 2021",.252],["Boeing 2022",.249],["Boeing 2024",.248],["Boeing 2023",.245]],
@@ -1068,254 +456,68 @@ new Chart(document.getElementById('donutC'),{
       answer:"Regulatory/Litigation Risk shows up across nearly every company. Airbnb's language centers on government information requests and disagreements over local-regulation interpretation; Boeing and Amazon reference frequent legal claims, government inquiries, and compliance investigations. It's a broad theme, but feature-importance analysis found it less discriminating for separating risk tiers than Supply Chain Risk."
     },
   ];
-
-  let activeQ=-1, retrievedIdxs=[], beamProgress=[], typeTimer=null;
-
-  /* ---- question chips ---- */
-  const qWrap=document.getElementById('ragQuestions');
-  RAG_QUESTIONS.forEach((rq,i)=>{
-    const b=document.createElement('button');
-    b.className='rag-chip'; b.textContent=rq.q;
-    b.onclick=()=>selectQuestion(i);
-    qWrap.appendChild(b);
-  });
-
-  function selectQuestion(i){
-    activeQ=i;
-    [...qWrap.children].forEach((c,ci)=>c.classList.toggle('active',ci===i));
-    const rq=RAG_QUESTIONS[i];
-    retrievedIdxs=rq.retrieved.map(([id])=>fIdx(id));
-    beamProgress=retrievedIdxs.map(()=>0);
-
-    // evidence bars
-    const evWrap=document.getElementById('ragEvidence');
-    evWrap.innerHTML='';
-    const maxSim=Math.max(...rq.retrieved.map(r=>r[1]));
-    rq.retrieved.forEach(([id,sim])=>{
-      const f=FILINGS[fIdx(id)];
-      const row=document.createElement('div'); row.className='rag-ev-row';
-      row.innerHTML=`<div class="rag-ev-name">${f.company} ${f.year}</div>
-        <div class="rag-ev-track"><div class="rag-ev-fill" style="background:linear-gradient(90deg,${f.col},${f.col}88);"></div></div>
-        <div class="rag-ev-val">${sim.toFixed(3)}</div>`;
-      evWrap.appendChild(row);
-      requestAnimationFrame(()=>{
-        const fill=row.querySelector('.rag-ev-fill');
-        fill.style.width=((sim/maxSim)*100)+'%';
-      });
-    });
-
-    // typewriter answer
-    const ansEl=document.getElementById('ragAnswer');
-    if(typeTimer) clearInterval(typeTimer);
-    ansEl.innerHTML='<span class="rag-cursor"></span>';
-    let chars=0; const full=rq.answer;
-    typeTimer=setInterval(()=>{
-      chars+=3;
-      ansEl.innerHTML=full.slice(0,chars)+'<span class="rag-cursor"></span>';
-      if(chars>=full.length) clearInterval(typeTimer);
-    },14);
+ let active=-1,ret=[],beam=[],typeT=null,pipeT=[];
+ const qs=$('qs');
+ RQ.forEach((r,i)=>{const b=document.createElement('button');b.className='q';b.type='button';b.setAttribute('aria-pressed','false');b.textContent=r.q;b.onclick=()=>pick(i);qs.appendChild(b);});
+ const pipe=[...$('pipe').querySelectorAll('b')];
+ function lightPipe(){pipeT.forEach(clearTimeout);pipeT=[];pipe.forEach(b=>b.classList.remove('on'));
+  pipe.forEach((b,i)=>pipeT.push(setTimeout(()=>b.classList.add('on'),RM?0:i*420)));}
+ function pick(i){
+  active=i;[...qs.children].forEach((b,k)=>b.setAttribute('aria-pressed',k===i?'true':'false'));
+  const rq=RQ[i];ret=rq.retrieved.map(([id])=>fIdx(id));beam=ret.map(()=>0);lightPipe();
+  const ev=$('ev');ev.innerHTML='';const m=Math.max(...rq.retrieved.map(r=>r[1]));
+  rq.retrieved.forEach(([id,s])=>{const f=FIL[fIdx(id)];const row=document.createElement('div');row.className='ev';row.innerHTML='<span>'+f.company+' '+f.year+'</span><span class="t"><i style="background:'+f.col+'"></i></span><span>'+s.toFixed(3)+'</span>';ev.appendChild(row);requestAnimationFrame(()=>requestAnimationFrame(()=>{row.querySelector('i').style.width=(s/m*100)+'%';}));});
+  const a=$('ans');clearInterval(typeT);
+  if(RM){a.textContent=rq.answer;return;}
+  let n=0;a.innerHTML='<span class="caret"></span>';
+  typeT=setInterval(()=>{n+=3;a.textContent=rq.answer.slice(0,n);if(n<rq.answer.length)a.insertAdjacentHTML('beforeend','<span class="caret"></span>');else clearInterval(typeT);},14);
+ }
+ const c=$('galaxy'),x=c.getContext('2d');let W,H,rx=.25,ry=.5,drag=false,lx,ly,auto=true,t=0,hov=-1,last=[],tm=null;
+ function size(){const r=c.parentElement.getBoundingClientRect();const d=dpr();W=r.width;H=r.height;c.width=W*d;c.height=H*d;x.setTransform(d,0,0,d,0,0);}
+ size();addEventListener('resize',size);track(c);
+ const mul=(m,v)=>[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];
+ const RX=a=>[1,0,0,0,Math.cos(a),-Math.sin(a),0,Math.sin(a),Math.cos(a)],RY=a=>[Math.cos(a),0,Math.sin(a),0,1,0,-Math.sin(a),0,Math.cos(a)];
+ const pr=v=>{const sc=Math.min(W,H)*.62,z=v[2]+3.2,f=sc*1.6;return{x:v[0]*f/z+W/2,y:v[1]*f/z+H/2,z:v[2],persp:f/z,k:f/z/(sc*1.6/3.2)};};
+ function draw(){
+  if(vis.get(c)!==false&&W>0){
+  x.clearRect(0,0,W,H);t+=.012;if(auto&&!drag&&!RM)ry+=.0022;
+  const my=RY(ry),mxm=RX(rx);
+  const qp=pr(mul(mxm,mul(my,[0,Math.sin(t*1.4)*.05,0])));
+  const pts=FIL.map(f=>pr(mul(mxm,mul(my,f.pos))));last=pts;
+  x.strokeStyle='rgba(14,42,71,.12)';x.lineWidth=1;x.setLineDash([3,5]);x.beginPath();
+  for(let a=0;a<=Math.PI*2+.1;a+=.1){const p=pr(mul(mxm,mul(my,[Math.cos(a)*1.15,0,Math.sin(a)*1.15])));a===0?x.moveTo(p.x,p.y):x.lineTo(p.x,p.y);}x.stroke();x.setLineDash([]);
+  const has=active>=0;
+  if(has)ret.forEach((fi,bi)=>{beam[bi]=Math.min(1,beam[bi]+.035);const p=pts[fi],f=FIL[fi],pg=beam[bi];
+   const mx_=(qp.x+p.x)/2+Math.sin(t*2+bi)*10,my_=(qp.y+p.y)/2-14;
+   x.beginPath();x.moveTo(qp.x,qp.y);for(let s=1;s<=24*pg;s++){const k=s/24;x.lineTo((1-k)*(1-k)*qp.x+2*(1-k)*k*mx_+k*k*p.x,(1-k)*(1-k)*qp.y+2*(1-k)*k*my_+k*k*p.y);}
+   x.strokeStyle=f.col;x.globalAlpha=.75;x.lineWidth=2.6-bi*.25;x.stroke();x.globalAlpha=1;
+   if(pg>=1){const k=(t*.6+bi*.2)%1;x.beginPath();x.arc((1-k)*(1-k)*qp.x+2*(1-k)*k*mx_+k*k*p.x,(1-k)*(1-k)*qp.y+2*(1-k)*k*my_+k*k*p.y,3.2,0,7);x.fillStyle='#fff';x.shadowBlur=10;x.shadowColor=f.col;x.fill();x.shadowBlur=0;}});
+  pts.map((p,i)=>i).sort((a,b)=>pts[a].z-pts[b].z).forEach(i=>{const f=FIL[i],p=pts[i],isR=has&&ret.includes(i),dim=has&&!isR;
+   const r=Math.max((5+f.score/100*9)*p.k,3.6);
+   x.globalAlpha=dim?.22:1;
+   if(isR||hov===i){x.shadowBlur=20;x.shadowColor=f.col;}
+   const g=x.createRadialGradient(p.x-r*.35,p.y-r*.35,r*.1,p.x,p.y,r);g.addColorStop(0,'#fff');g.addColorStop(.25,f.col);g.addColorStop(1,f.col);
+   x.beginPath();x.arc(p.x,p.y,r,0,7);x.fillStyle=g;x.fill();x.shadowBlur=0;
+   x.lineWidth=isR?3:1.5;x.strokeStyle=isR?'#0e2a47':'rgba(255,255,255,.9)';x.stroke();x.globalAlpha=1;});
+  // query core
+  const qr=11+Math.sin(t*3)*1.6;const qg=x.createRadialGradient(qp.x,qp.y,0,qp.x,qp.y,qr+6);qg.addColorStop(0,'#fff7d6');qg.addColorStop(.6,'#f5b82e');qg.addColorStop(1,'#e8792b');
+  x.beginPath();x.arc(qp.x,qp.y,qr,0,7);x.fillStyle=qg;x.shadowBlur=24;x.shadowColor='#f5b82e';x.fill();x.shadowBlur=0;
+  if(has){x.font='700 13px Figtree,system-ui,sans-serif';x.fillStyle='#0e2a47';x.textAlign='center';x.fillText('question',qp.x,qp.y-20);}
+  if(hov>=0){const f=FIL[hov],p=pts[hov];const tw=128,th=42,tx=Math.min(Math.max(p.x+12,4),W-tw-4),ty=Math.max(p.y-th-10,4);
+   x.fillStyle='#0e2a47';x.beginPath();x.roundRect(tx,ty,tw,th,9);x.fill();x.font='700 13px Figtree,system-ui,sans-serif';x.fillStyle='#fff';x.textAlign='left';x.fillText(f.company+' '+f.year,tx+10,ty+18);
+   x.font='600 12px Figtree,system-ui,sans-serif';x.fillStyle='#bfe6f0';x.fillText('Risk score '+f.score.toFixed(1),tx+10,ty+33);}
   }
-
-  /* ---- 3D galaxy canvas ---- */
-  const cvs=document.getElementById('ragGalaxyCanvas'),ctx=cvs.getContext('2d');
-  let W,H,rotX=.25,rotY=.5,dragging=false,lx,ly,autoRot=true,t=0;
-  let hoverIdx=-1, lastPts=[];
-
-  function resize(){
-    const r=cvs.parentElement.getBoundingClientRect();
-    W=cvs.width=r.width; H=cvs.height=r.height;
-  }
-  resize(); addEventListener('resize',resize);
-
-  function mulM(m,v){return[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];}
-  function rotMX(a){return[1,0,0,0,Math.cos(a),-Math.sin(a),0,Math.sin(a),Math.cos(a)];}
-  function rotMY(a){return[Math.cos(a),0,Math.sin(a),0,1,0,-Math.sin(a),0,Math.cos(a)];}
-  function project(v){
-    const scale=Math.min(W,H)*.42;
-    const z=v[2]+3.2;
-    const fov=scale*1.6;
-    return{x:v[0]*fov/z+W/2, y:v[1]*fov/z+H/2, z:v[2],persp:fov/z};
-  }
-
-  function idxNear(mx,my,pts){
-    let best=-1,bd=26;
-    pts.forEach((p,i)=>{
-      const d=Math.hypot(p.sx-mx,p.sy-my);
-      if(d<bd){bd=d;best=i;}
-    });
-    return best;
-  }
-
-  function draw(){
-    ctx.clearRect(0,0,W,H); t+=.012;
-    if(autoRot&&!dragging) rotY+=.0022;
-
-    const my=rotMY(rotY),mx=rotMX(rotX);
-    // query node at origin, gently bobbing
-    const qPos=mulM(mx,mulM(my,[0,Math.sin(t*1.4)*.05,0]));
-    const qProj=project(qPos);
-
-    const pts=FILINGS.map(f=>{
-      let v=mulM(my,f.pos); v=mulM(mx,v);
-      const p=project(v);
-      p.sx=p.x; p.sy=p.y;
-      return p;
-    });
-    lastPts=pts;
-
-    // faint cluster orbit rings
-    ctx.strokeStyle='rgba(120,190,255,.06)';
-    ctx.lineWidth=.6;
-    for(let ring=0;ring<3;ring++){
-      ctx.beginPath();
-      for(let a=0;a<=Math.PI*2+.1;a+=.1){
-        const r=1.15+ring*.001;
-        const v=mulM(mx,mulM(my,[Math.cos(a)*r,Math.sin(ring)*.15,Math.sin(a)*r]));
-        const p=project(v);
-        a===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);
-      }
-      ctx.stroke();
-    }
-
-    const hasActive=activeQ>=0;
-
-    // beams (drawn before nodes, under them)
-    if(hasActive){
-      retrievedIdxs.forEach((fi,bi)=>{
-        beamProgress[bi]=Math.min(1,beamProgress[bi]+.035);
-        const p=pts[fi]; const f=FILINGS[fi];
-        const prog=beamProgress[bi];
-        const midx=(qProj.x+p.x)/2+Math.sin(t*2+bi)*10;
-        const midy=(qProj.y+p.y)/2-14;
-        // curve up to current progress
-        ctx.beginPath();
-        ctx.moveTo(qProj.x,qProj.y);
-        const steps=24;
-        for(let s=1;s<=steps*prog;s++){
-          const tt=s/steps;
-          const bx=(1-tt)*(1-tt)*qProj.x+2*(1-tt)*tt*midx+tt*tt*p.x;
-          const byY=(1-tt)*(1-tt)*qProj.y+2*(1-tt)*tt*midy+tt*tt*p.y;
-          ctx.lineTo(bx,byY);
-        }
-        ctx.strokeStyle=f.col+'aa';
-        ctx.lineWidth=2.2-bi*.25;
-        ctx.shadowBlur=8; ctx.shadowColor=f.col;
-        ctx.stroke();
-        ctx.shadowBlur=0;
-        // traveling packet
-        if(prog>=1){
-          const tt=(t*.6+bi*.2)%1;
-          const bx=(1-tt)*(1-tt)*qProj.x+2*(1-tt)*tt*midx+tt*tt*p.x;
-          const byY=(1-tt)*(1-tt)*qProj.y+2*(1-tt)*tt*midy+tt*tt*p.y;
-          ctx.beginPath(); ctx.arc(bx,byY,2.6,0,Math.PI*2);
-          ctx.fillStyle='#ffffff'; ctx.shadowBlur=10; ctx.shadowColor=f.col;
-          ctx.fill(); ctx.shadowBlur=0;
-        }
-      });
-    }
-
-    // nodes, painter's algorithm (back to front)
-    const order=pts.map((p,i)=>i).sort((a,b)=>pts[a].z-pts[b].z);
-    order.forEach(i=>{
-      const f=FILINGS[i], p=pts[i];
-      const isRet=hasActive&&retrievedIdxs.includes(i);
-      const dim=hasActive&&!isRet;
-      const baseR=4.5+(f.score/100)*8.5;
-      const r=baseR*(p.persp/ (Math.min(W,H)*.42*1.6/3.2));
-      let alpha=dim?.14:.92;
-      if(isRet) alpha=1;
-      ctx.globalAlpha=alpha;
-      ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(r,3.2),0,Math.PI*2);
-      ctx.fillStyle=f.col;
-      if(isRet||hoverIdx===i){ ctx.shadowBlur=18; ctx.shadowColor=f.col; }
-      ctx.fill(); ctx.shadowBlur=0;
-      if(isRet){
-        ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.lineWidth=1.6; ctx.stroke();
-      }
-      // soft glossy highlight for a "bubble" feel
-      ctx.beginPath();
-      ctx.arc(p.x-r*.32,p.y-r*.32,Math.max(r*.35,1),0,Math.PI*2);
-      ctx.fillStyle='rgba(255,255,255,.35)';
-      ctx.fill();
-      ctx.globalAlpha=1;
-    });
-
-    // query node (gold core)
-    ctx.beginPath(); ctx.arc(qProj.x,qProj.y,10+Math.sin(t*3)*1.8,0,Math.PI*2);
-    const qg=ctx.createRadialGradient(qProj.x,qProj.y,0,qProj.x,qProj.y,15);
-    qg.addColorStop(0,'#fff6d8'); qg.addColorStop(1,'#f0abfc');
-    ctx.fillStyle=qg; ctx.shadowBlur=26; ctx.shadowColor='#fbbf24';
-    ctx.fill(); ctx.shadowBlur=0;
-    ctx.font=`600 12px ${FONT}`; ctx.fillStyle='rgba(255,240,200,.9)'; ctx.textAlign='center';
-    ctx.fillText(hasActive?'query':'', qProj.x, qProj.y-19);
-
-    // hover tooltip
-    if(hoverIdx>=0){
-      const f=FILINGS[hoverIdx], p=pts[hoverIdx];
-      const tw=118,th=40,tx=Math.min(p.x+10,W-tw-4),ty=Math.max(p.y-th-8,4);
-      ctx.fillStyle='rgba(2,14,40,.93)'; ctx.strokeStyle=f.col; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.roundRect(tx,ty,tw,th,7); ctx.fill(); ctx.stroke();
-      ctx.font=`600 11px ${FONT}`; ctx.fillStyle='#fff'; ctx.textAlign='left';
-      ctx.fillText(`${f.company} ${f.year}`,tx+8,ty+16);
-      ctx.font=`500 10px ${FONT}`; ctx.fillStyle=f.col;
-      ctx.fillText(`Risk score: ${f.score.toFixed(1)}`,tx+8,ty+30);
-    }
-
-    ctx.font=`500 10px ${FONT}`; ctx.fillStyle='rgba(140,200,255,.55)'; ctx.textAlign='center';
-    ctx.fillText('drag to rotate',W/2,H-8);
-
-    requestAnimationFrame(draw);
-  }
-
-  cvs.addEventListener('mousedown',e=>{dragging=true;autoRot=false;lx=e.clientX;ly=e.clientY;cvs.style.cursor='grabbing';});
-  window.addEventListener('mouseup',()=>{dragging=false;cvs.style.cursor='grab';setTimeout(()=>autoRot=true,2200);});
-  window.addEventListener('mousemove',e=>{
-    if(dragging){
-      rotY+=(e.clientX-lx)*.008; rotX+=(e.clientY-ly)*.008;
-      lx=e.clientX; ly=e.clientY;
-    }
-    const rect=cvs.getBoundingClientRect();
-    const mxp=e.clientX-rect.left,myp=e.clientY-rect.top;
-    if(mxp>=0&&mxp<=W&&myp>=0&&myp<=H){
-      // recompute last-drawn point screen coords cheaply via stored FILINGS proj cache
-      hoverIdx=idxNear(mxp,myp,lastPts||[]);
-    } else hoverIdx=-1;
-  });
-  cvs.addEventListener('touchstart',e=>{autoRot=false;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
-  cvs.addEventListener('touchmove',e=>{
-    rotY+=(e.touches[0].clientX-lx)*.008; rotX+=(e.touches[0].clientY-ly)*.008;
-    lx=e.touches[0].clientX; ly=e.touches[0].clientY; e.preventDefault();
-  },{passive:false});
-
   requestAnimationFrame(draw);
-
-  // auto-select first question after a short delay so the galaxy isn't inert
-  setTimeout(()=>selectQuestion(0),1400);
+ }
+ const loc=e=>{const r=c.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
+ c.addEventListener('pointerdown',e=>{drag=true;auto=false;lx=e.clientX;ly=e.clientY;c.setPointerCapture(e.pointerId);});
+ c.addEventListener('pointermove',e=>{if(drag){ry+=(e.clientX-lx)*.008;rx+=(e.clientY-ly)*.008;lx=e.clientX;ly=e.clientY;}
+  const [mx_,my_]=loc(e);let b=-1,bd=24;last.forEach((p,i)=>{const d=Math.hypot(p.x-mx_,p.y-my_);if(d<bd){bd=d;b=i;}});hov=b;});
+ c.addEventListener('pointerleave',()=>{hov=-1;});
+ const up=()=>{drag=false;clearTimeout(tm);tm=setTimeout(()=>auto=true,2200);};
+ c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
+ requestAnimationFrame(draw);
+ setTimeout(()=>pick(0),RM?0:1400);
 })();
-
-/* ── KPI CARD INTERACTIONS ── */
-function kpiClick(el){
-  // ripple
-  const r=document.createElement('div');
-  r.className='kpi-ripple';
-  const size=Math.max(el.offsetWidth,el.offsetHeight);
-  r.style.cssText=`width:${size}px;height:${size}px;left:${el.offsetWidth/2-size/2}px;top:${el.offsetHeight/2-size/2}px;`;
-  el.appendChild(r);
-  setTimeout(()=>r.remove(),600);
-  // toggle active
-  document.querySelectorAll('.kpi').forEach(k=>{ if(k!==el) k.classList.remove('active'); });
-  el.classList.toggle('active');
-}
-// animate bars on load
-window.addEventListener('load',()=>{
-  setTimeout(()=>{
-    document.querySelectorAll('.kpi').forEach(k=>{
-      const pct=parseFloat(k.dataset.pct)||0;
-      const fill=k.querySelector('.kpi-bar-fill');
-      if(fill) fill.style.width=Math.min(pct,100)+'%';
-    });
-  },300);
-});
-</script>
-</body>
-</html>
+})();
+</script></body></html>
